@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an explicit, idempotent achievement sample fixture for existing demo accounts without overwriting activity.
+
 - Align page widths, header gutters and panel spacing across all screens.
 - Use content-container breakpoints for cards, achievements, forms and history grids.
 - Prevent cramped controls and hero artwork overlap on narrow layouts.

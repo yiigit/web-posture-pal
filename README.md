@@ -72,6 +72,15 @@ Sign in at `/account.html` as **`alex@demo.posturepal.test`** using your supplie
 
 The demo adds four profiles, two friendships, one incoming friend request, five clearly labeled example activities (including a private post), two cheers and a comment, alongside the standard exercise library. Seeding is transactional and idempotent: rerunning changes no passwords or records. Existing identifier collisions are rejected. It never runs on normal startup and should only be enabled in a development/demo database. Browser-local habits and completed-break counts are not fabricated by the demo seed.
 
+To populate achievement examples separately, after seeding demo accounts, run:
+
+```bash
+docker compose run --rm posturepal python -m posturepal.commands.seed_achievements
+```
+
+This explicitly creates **synthetic** private activity history: Alex has 30 active days and all six awards; Maya has seven days with partial trophy progress; Riley has one habit checked; Jordan remains empty. Sign in to each demo account to view its dashboard or breaks page. This is sample history, not measured activity. Use only in a development/demo database. It never runs at startup, changes real accounts, publishes posts, or touches browser-local activity. It refuses existing activity in any target account and is transactional and idempotent. Deleted sample history is not recreated on reruns. The usual export, erasure and 90-day retention rules apply; samples naturally age out.
+
+
 ## Included
 
 - Eight gentle movements with steps, duration and seated/standing guidance.

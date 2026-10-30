@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.engine import make_url
 from posturepal.shared.infrastructure.database import Database, schema
 from posturepal.commands.seed_demo import seed_demo, demo_id
+from posturepal.commands.seed_achievements import seed_achievements
 from posturepal.commands.import_sqlite import import_sqlite
 from posturepal.server import create_app
 from posturepal.users.infrastructure.repository import UserRepository
@@ -92,6 +93,11 @@ def validate(url):
             assert client.get(activity_path).json()['habits']==[]
             feed=client.get('/api/v1/social').json()['feed']['items']
             assert all(post['user_id']!=demo_id('alex') for post in feed)
+            assert seed_achievements(database)['seeded']
+            assert not seed_achievements(database)['seeded']
+            samples=client.get('/api/v1/me/daily-activity/progress?day='+datetime.now(timezone.utc).date().isoformat()).json()
+            assert samples['totals']['active_days']==7
+            assert any(award['id']=='seven-days' and award['earned'] for award in samples['awards'])
         print('PASS: MySQL migration, demo idempotency, authentication, Unicode profiles, CRUD, private daily activity, privacy, social statistics and blocking')
     finally:
         schema.drop_all(database.engine)
