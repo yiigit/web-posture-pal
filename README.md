@@ -93,7 +93,7 @@ This explicitly creates **synthetic** private activity history: Alex has 30 acti
 
 Favorites remain browser-local. Guest daily habits and break counts remain in the browser; signed-in users save daily activity privately to their account. Accounts and profiles are supported; there is no webcam monitoring.
 
-All pages share persistent left navigation. On narrow screens it becomes an icon rail with accessible link labels.
+All pages share persistent left navigation. Administration and User management links appear only for an active, signed-in administrator; guest and member sessions do not see these links. On narrow screens it becomes an icon rail with accessible link labels.
 
 ## Home dashboard
 

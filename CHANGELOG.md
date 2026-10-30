@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Show administration and user-management links only for active signed-in administrators, refreshing on account changes and session checks.
+
 - Add an explicit, idempotent achievement sample fixture for existing demo accounts without overwriting activity.
 
 - Align page widths, header gutters and panel spacing across all screens.

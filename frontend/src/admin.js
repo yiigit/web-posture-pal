@@ -1,3 +1,4 @@
+import { useAdminVisibility } from './composables/useAdminVisibility.js';
 import AppSidebar from './components/AppSidebar.js';
 import ProfileBadge from './components/ProfileBadge.js';
 import { createApp, ref } from '/vendor/vue.esm-browser.prod.js';
@@ -5,6 +6,7 @@ import { createApp, ref } from '/vendor/vue.esm-browser.prod.js';
 createApp({
  components: { AppSidebar, ProfileBadge },
   setup() {
+  const { isAdmin } = useAdminVisibility();
     const token = ref(''), authenticated = ref(false), exercises = ref([]), error = ref('');
     const busy = ref(false), editing = ref(null), form = ref(null), notice = ref('');
     const areas = ['Neck', 'Shoulders', 'Back', 'Wrists', 'Legs', 'Full body'];
@@ -75,10 +77,10 @@ createApp({
       finally { busy.value = false; }
     }
     // Credentials intentionally live only in memory and disappear on reload/logout.
-    return { dashboard, view, navigate, refresh, token, authenticated, exercises, error, busy, editing, form, notice, areas, positions, symbols, deleting, login, logout, edit, save, remove };
+    return { isAdmin, dashboard, view, navigate, refresh, token, authenticated, exercises, error, busy, editing, form, notice, areas, positions, symbols, deleting, login, logout, edit, save, remove };
   },
   template: `<div class="shell"><app-sidebar active="admin"/><div class="content"><main class="admin-page"><div class="account-topbar"><a href="/" class="text-button">PosturePal dashboard</a><profile-badge/></div>
-    <div class="admin-actions"><a href="/" class="text-button">← Back to dashboard</a><a href="/users.html" class="text-button">Manage users →</a><a href="/account.html" class="text-button">Your profile</a></div>
+    <div class="admin-actions"><a href="/" class="text-button">← Back to dashboard</a><a v-if="isAdmin" href="/users.html" class="text-button">Manage users →</a><a href="/account.html" class="text-button">Your profile</a></div>
     <div class="admin-heading"><div><div class="eyebrow">POSTUREPAL ADMINISTRATION</div><h1>{{ view === 'dashboard' ? 'Your library at a glance.' : 'Manage movements.' }}</h1><p>Keep your movement library balanced, useful, and ready for a break.</p></div><button v-if="authenticated" class="secondary" @click="logout" :disabled="busy">Sign out</button></div>
     <p v-if="error" role="alert" class="admin-error">{{ error }}</p><p v-if="notice" role="status" class="success">{{ notice }}</p>
     <form v-if="!authenticated" @submit.prevent="login" class="admin-panel login-form">
