@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Use MySQL 8.4 for Docker persistence through a portable SQLAlchemy/PyMySQL layer.
+- Add an opt-in, idempotent demo fixture with profiles, social activity and friendships.
+- Add a transactional read-only SQLite-to-MySQL importer that refuses nonempty destinations.
+- Add live MySQL integration checks and database-aware health checks.
+
 ## 0.10.0 — 2026-10-30
 
 - Add friend requests, acceptance, removal and blocking with account-based authentication.

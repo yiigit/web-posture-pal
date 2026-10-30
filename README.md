@@ -4,20 +4,20 @@ A smart sitting habit coach, starting with a Movement & Exercise Library. FastAP
 
 ## Run with Docker
 
-Configure an administrator token first (do not commit `.env`):
+For a new installation, configure an administrator token and separate MySQL application/root passwords (do not commit `.env`). For an existing installation, add the missing MySQL fields to your existing `.env` instead of replacing it:
 
 ```bash
 cp .env.example .env
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Paste the generated value after `POSTUREPAL_ADMIN_TOKEN=` in `.env`, then start:
+Generate a separate random value for each of `POSTUREPAL_ADMIN_TOKEN`, `MYSQL_PASSWORD`, and `MYSQL_ROOT_PASSWORD` in `.env`, then start:
 
 ```bash
 docker compose up --build -d
 ```
 
-Open **http://127.0.0.1:8000** for the default dashboard. The movement library is at **http://127.0.0.1:8000/library.html**. Interactive API docs are at **http://127.0.0.1:8000/docs**. Docker Compose builds the Python 3.13 image and runs Uvicorn as a non-root user, with a health check. The port is bound to localhost.
+Open **http://127.0.0.1:8000** for the default dashboard. The movement library is at **http://127.0.0.1:8000/library.html**. Interactive API docs are at **http://127.0.0.1:8000/docs**. Docker Compose builds the Python 3.13 image and runs Uvicorn as a non-root user, with a health check. The app port is bound to localhost. MySQL 8.4 runs on the internal Compose network with persistent `mysql-data` storage and a non-root application account. It is not exposed on a host port. The app waits for the database health check.
 
 ```bash
 docker compose logs -f
@@ -31,10 +31,46 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 # Set a token in this shell (or omit it to disable administration).
 export POSTUREPAL_ADMIN_TOKEN="$(.venv/bin/python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+# For an external MySQL server, set MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE,
+# MYSQL_USER and MYSQL_PASSWORD in your shell; or use POSTUREPAL_DATABASE_URL.
 PYTHONPATH=backend .venv/bin/python -m posturepal.server
 ```
 
 Vue 3.5.13 is vendored locally, with no npm build step. Google Fonts is optional and falls back to system fonts. Docker builds and initial Python dependency installation require internet access.
+
+## Database configuration
+
+Docker uses MySQL by default. The SQLAlchemy/PyMySQL connection uses `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD`. `POSTUREPAL_DATABASE_URL` takes precedence for external connections (`mysql+pymysql://…`, percent-encode credentials when using a URL). Local development without either MySQL configuration or a URL falls back to `POSTUREPAL_DB_PATH` / `data/posturepal.db`; the automated unit suite uses temporary SQLite databases. Passwords are assembled into a SQLAlchemy URL object from separate variables to handle special characters safely. SQL parameters and connection passwords are not logged.
+
+The health endpoint checks database connectivity. Shared SQLAlchemy schema definitions enable foreign-key deletion cascades on both engines. Critical account/rate-limit/friendship changes use explicit transaction locks. New empty databases receive the standard eight-movement catalog once.
+
+### Existing SQLite installations
+
+The old `posturepal-data` Docker volume is retained and mounted read-only at `/legacy`; it is never deleted or overwritten. Migration is explicit and imports exercise data, accounts/password hashes, sessions, privacy settings and social records into an **empty** MySQL application database. Back up your old volume/file first. Stop the old app before importing so the SQLite source is a consistent offline database.
+
+For an existing installation, after configuring MySQL fields, run these commands **before starting the new app**:
+
+```bash
+docker compose stop posturepal
+docker compose up -d mysql
+docker compose build posturepal
+docker compose run --rm --no-deps posturepal python -m posturepal.commands.import_sqlite --source /legacy/posturepal.db
+docker compose up -d posturepal
+```
+
+The importer refuses nonempty destinations and rolls back all copied rows on failure; it does not modify the source. Missing newer tables in an older SQLite file are allowed. Do not seed demo data before importing. For a local SQLite file, mount its containing directory read-only at `/legacy` when running the import command. Existing MySQL data is not automatically merged or replaced.
+
+### Demo data
+
+Set `POSTUREPAL_DEMO_PASSWORD` to a unique 12–128 character password in `.env`, then explicitly run:
+
+```bash
+docker compose run --rm posturepal python -m posturepal.commands.seed_demo
+```
+
+Sign in at `/account.html` as **`alex@demo.posturepal.test`** using your supplied password. Alex is a demo administrator. Maya, Riley and Jordan use the same supplied demo password with respective emails `maya@demo.posturepal.test`, `riley@demo.posturepal.test`, and `jordan@demo.posturepal.test`; each account receives an independently salted hash.
+
+The demo adds four profiles, two friendships, one incoming friend request, five clearly labeled example activities (including a private post), two cheers and a comment, alongside the standard exercise library. Seeding is transactional and idempotent: rerunning changes no passwords or records. Existing identifier collisions are rejected. It never runs on normal startup and should only be enabled in a development/demo database. Browser-local habits and completed-break counts are not fabricated by the demo seed.
 
 ## Included
 
@@ -74,10 +110,10 @@ Movement guidance references [NHS sitting exercises](https://www.nhs.uk/live-wel
 
 - `domain`: immutable exercise entity and repository interface.
 - `application`: library search, retrieval and CRUD use cases.
-- `infrastructure`: SQLite repository with parameterized queries and transactional writes; the curated catalog supplies initial seed data only.
+- `infrastructure`: portable SQLAlchemy repository with parameterized queries and transactional writes; the curated catalog supplies initial seed data only.
 - `presentation`: FastAPI router with typed exercise responses.
 
-`backend/posturepal/server.py` composes the dependencies, registers the FastAPI routes and serves the static frontend. Uvicorn runs the ASGI app. `frontend/src/composables/useLibrary.js` owns library state and persistence; `components/MovementFigure.js` is the reusable movement illustration; `main.js` composes the experience. SQLite stores the catalog in `data/posturepal.db` locally and `/app/data/posturepal.db` in Docker. Docker uses the `posturepal-data` named volume. Seed movements are inserted once; deleting all movements does not trigger reseeding. Back up the database before removing volumes. Set `POSTUREPAL_DB_PATH` to override its location.
+`backend/posturepal/server.py` composes the dependencies, registers the FastAPI routes and serves the static frontend. Uvicorn runs the ASGI app. `frontend/src/composables/useLibrary.js` owns library state and persistence; `components/MovementFigure.js` is the reusable movement illustration; `main.js` composes the experience. MySQL stores catalog, account and social data in Docker's `mysql-data` named volume. Schema and connection handling live in `shared/infrastructure/database.py`. Seed movements are inserted once; deleting all movements does not trigger reseeding. Back up data before removing volumes. SQLite remains available for isolated tests and local development compatibility.
 
 ## Administration and security
 
@@ -89,7 +125,7 @@ Library reads remain public. Exercise create, update and delete endpoints requir
 
 Use HTTPS when deploying beyond localhost: bearer tokens must not travel over plain HTTP. The Compose configuration binds only to localhost by default. API docs and the static admin page are public, but accessing the page does not authorize mutations.
 
-`backend/posturepal/users` contains account/profile domain models, account use cases, SQLite storage and HTTP contracts.
+`backend/posturepal/users` contains account/profile domain models, account use cases, SQLAlchemy-backed storage and HTTP contracts.
 
 `backend/posturepal/breaks` is a separate bounded context with domain models, coaching application logic and typed read-only HTTP endpoints. `frontend/src/composables/useDailyHabits.js` owns local daily progress and calendar rollover.
 
@@ -104,7 +140,7 @@ Open **`/social.html`**, or use **Friends & sharing** in the sidebar. Sign in wi
 - **Privacy:** control incoming requests, default post audience, friends-only activity visibility and comments. Disabling sharing hides existing friends-only posts immediately; enabling it restores their visibility. Private posts remain private. Removing a friend or blocking immediately revokes access. Unblocking does not recreate friendships.
 - **Statistics:** view friends, pending incoming requests, published/shared activities and cheers/comments received on the social Statistics tab. The home dashboard also shows a community summary. These are stored social counts, not verified exercise or health measurements.
 
-User names and activity text are displayed to permitted viewers; email addresses, profile bios and other profile fields are not exposed in the social feed. Social records live in the persistent SQLite database and are removed with account deletion. Publishing, commenting and friend requests are limited to 10 actions per category per 15 minutes per user. Social pages support existing themes and persistent navigation.
+User names and activity text are displayed to permitted viewers; email addresses, profile bios and other profile fields are not exposed in the social feed. Social records live in the persistent application database and are removed with account deletion. Publishing, commenting and friend requests are limited to 10 actions per category per 15 minutes per user. Social pages support existing themes and persistent navigation.
 
 ### Social API
 
@@ -126,7 +162,7 @@ Open **`/account.html`** to register, sign in, edit your display name/bio/time z
 
 Open **`/users.html`** for administrator user management. Use an admin session or bootstrap token to search/paginate accounts, create members/admins, edit profiles, enable/disable users, assign roles, reset passwords and delete accounts. The last active admin cannot be disabled, demoted or deleted. Bootstrap tokens can always create another admin. Access changes and password changes/resets revoke all sessions for the affected user.
 
-Passwords require 12–128 characters and are salted and hashed with scrypt (`N=16384`, `r=8`, `p=5`). Random session tokens expire after 12 hours and only their SHA-256 digests are stored in SQLite. Logout revokes the current session. Login and registration are throttled per connecting IP (10 attempts per 15 minutes); password confirmations are also throttled. Configure trusted proxy handling carefully if putting multiple clients behind a reverse proxy.
+Passwords require 12–128 characters and are salted and hashed with scrypt (`N=16384`, `r=8`, `p=5`). Random session tokens expire after 12 hours and only their SHA-256 digests are stored in the application database. Logout revokes the current session. Login and registration are throttled per connecting IP (10 attempts per 15 minutes); password confirmations are also throttled. Configure trusted proxy handling carefully if putting multiple clients behind a reverse proxy.
 
 Set **`POSTUREPAL_SECURE_COOKIES=true`** for HTTPS deployments. It defaults to false solely to support local HTTP development. User profile/session tables share the persistent catalog database. Existing installations add these tables automatically without replacing exercise data.
 
@@ -166,6 +202,15 @@ Unknown exercises and API routes return HTTP 404 with a JSON `detail` field. Ope
 ```bash
 PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 ```
+
+The MySQL integration smoke test requires a disposable database whose name ends in `_test` (it drops only that explicitly selected database's application tables):
+
+```bash
+# Set POSTUREPAL_TEST_MYSQL_URL securely in the test shell.
+PYTHONPATH=backend .venv/bin/python tests/mysql_smoke.py
+```
+
+It validates SQLite import, demo idempotency, MySQL CRUD, Unicode profiles, account roles, social privacy and deletion cascades. Never point it at application data.
 
 ## Versioning with Commitizen
 

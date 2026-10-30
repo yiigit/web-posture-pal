@@ -1,37 +1,14 @@
-import sqlite3
-from contextlib import contextmanager
+from sqlalchemy.exc import IntegrityError
+from posturepal.shared.infrastructure.database import Database
 from dataclasses import asdict
 
 from posturepal.users.domain.models import User, DuplicateEmail
 
 
 class UserRepository:
-    def __init__(self, path):
-        self.path = path
-        with self.connection() as db:
-            db.executescript('''
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-                display_name TEXT NOT NULL, bio TEXT NOT NULL DEFAULT '',
-                timezone TEXT NOT NULL DEFAULT 'UTC', theme TEXT NOT NULL DEFAULT 'light',
-                role TEXT NOT NULL DEFAULT 'member', active INTEGER NOT NULL DEFAULT 1,
-                created_at INTEGER NOT NULL, password_hash TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS user_sessions (
-                digest TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                expires_at INTEGER NOT NULL);
-            CREATE TABLE IF NOT EXISTS auth_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
-            ''')
-
-    @contextmanager
-    def connection(self):
-        db = sqlite3.connect(self.path, timeout=10)
-        db.row_factory = sqlite3.Row
-        db.execute('PRAGMA foreign_keys=ON')
-        try:
-            with db:
-                yield db
-        finally:
-            db.close()
+    def __init__(self, database):
+        self.database = database if isinstance(database, Database) else Database.from_path(database)
+        self.connection = self.database.connection
 
     @staticmethod
     def public(row):
@@ -51,7 +28,7 @@ class UserRepository:
         try:
             with self.connection() as db:
                 db.execute('INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?,?)', (*asdict(user).values(), password_hash))
-        except sqlite3.IntegrityError:
+        except IntegrityError:
             raise DuplicateEmail('An account with that email already exists') from None
         return user
 
@@ -68,7 +45,7 @@ class UserRepository:
 
     def access(self, user_id, role, active):
         with self.connection() as db:
-            db.execute('BEGIN IMMEDIATE')
+            db.lock()
             old = db.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
             if old is None:
                 raise LookupError('User not found')
@@ -85,7 +62,7 @@ class UserRepository:
 
     def delete(self, user_id):
         with self.connection() as db:
-            db.execute('BEGIN IMMEDIATE')
+            db.lock()
             old = db.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
             if old is None:
                 raise LookupError('User not found')
@@ -113,10 +90,13 @@ class UserRepository:
 
     def attempt(self, key, now):
         with self.connection() as db:
-            db.execute('BEGIN IMMEDIATE')
+            db.lock()
             db.execute('DELETE FROM auth_attempts WHERE expires_at<=?', (now,))
-            row = db.execute('SELECT count FROM auth_attempts WHERE key=?', (key,)).fetchone()
+            row = db.execute('SELECT count FROM auth_attempts WHERE `key`=?', (key,)).fetchone()
             if row and row['count'] >= 10:
                 return False
-            db.execute('INSERT INTO auth_attempts VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1', (key, now + 900))
+            if row:
+                db.execute('UPDATE auth_attempts SET count=count+1 WHERE `key`=?', (key,))
+            else:
+                db.execute('INSERT INTO auth_attempts VALUES (?,1,?)', (key, now + 900))
         return True

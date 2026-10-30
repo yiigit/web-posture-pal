@@ -16,7 +16,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from posturepal.movement.application.library import MovementLibrary
-from posturepal.movement.infrastructure.sqlite_repository import SQLiteExerciseRepository
+from posturepal.movement.infrastructure.repository import ExerciseRepository
+from posturepal.shared.infrastructure.database import Database
 from posturepal.security.admin import admin_dependency
 from posturepal.breaks.application.coach import BreakCoach
 from posturepal.breaks.presentation.http import create_break_router
@@ -31,11 +32,13 @@ class HealthResponse(BaseModel):
     version: str
 
 
-def create_app(database_path: Path | None = None, admin_token: str | None = None) -> FastAPI:
+def create_app(database_path: Path | None = None, admin_token: str | None = None, database: Database | None = None) -> FastAPI:
     app = FastAPI(title="PosturePal", version=VERSION)
-    repository = SQLiteExerciseRepository(database_path or Path(os.getenv('POSTUREPAL_DB_PATH', str(ROOT / 'data' / 'posturepal.db'))))
+    database = database or (Database.from_path(database_path) if database_path else Database.configured())
+    app.state.database = database
+    repository = ExerciseRepository(database)
     token_admin = admin_dependency(admin_token if admin_token is not None else os.getenv('POSTUREPAL_ADMIN_TOKEN', ''))
-    accounts = Accounts(UserRepository(repository.path))
+    accounts = Accounts(UserRepository(database))
     current_user = current_user_dependency(accounts)
 
     def require_admin(request: Request, credentials=Depends(bearer)):
@@ -72,6 +75,8 @@ def create_app(database_path: Path | None = None, admin_token: str | None = None
 
     @app.get("/api/v1/health", response_model=HealthResponse, tags=["Health"])
     def health():
+        with database.connection() as db:
+            db.execute('SELECT 1')
         return HealthResponse(status="ok", version=VERSION)
 
     # Register before the frontend mount to keep API errors as JSON.

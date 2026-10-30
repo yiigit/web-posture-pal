@@ -6,37 +6,6 @@ from posturepal.social.domain.policy import can_view
 class SocialRepository:
     def __init__(self, users):
         self.connection = users.connection
-        with self.connection() as db:
-            db.executescript('''
-            CREATE TABLE IF NOT EXISTS social_settings (
-                user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-                accept_requests INTEGER NOT NULL DEFAULT 1,
-                sharing_enabled INTEGER NOT NULL DEFAULT 1,
-                default_audience TEXT NOT NULL DEFAULT 'private',
-                allow_comments INTEGER NOT NULL DEFAULT 1);
-            CREATE TABLE IF NOT EXISTS friendships (
-                sender TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                recipient TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                status TEXT NOT NULL, created_at INTEGER NOT NULL,
-                PRIMARY KEY(sender,recipient));
-            CREATE TABLE IF NOT EXISTS social_blocks (
-                blocker TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                blocked TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                PRIMARY KEY(blocker,blocked));
-            CREATE TABLE IF NOT EXISTS social_posts (
-                id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                kind TEXT NOT NULL, text TEXT NOT NULL, audience TEXT NOT NULL, created_at INTEGER NOT NULL);
-            CREATE TABLE IF NOT EXISTS social_likes (
-                post_id TEXT NOT NULL REFERENCES social_posts(id) ON DELETE CASCADE,
-                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                PRIMARY KEY(post_id,user_id));
-            CREATE TABLE IF NOT EXISTS social_comments (
-                id TEXT PRIMARY KEY, post_id TEXT NOT NULL REFERENCES social_posts(id) ON DELETE CASCADE,
-                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, text TEXT NOT NULL, created_at INTEGER NOT NULL);
-            CREATE INDEX IF NOT EXISTS social_posts_created ON social_posts(created_at);
-            CREATE INDEX IF NOT EXISTS social_comments_post ON social_comments(post_id);
-            ''')
-
     def settings(self, db, user_id):
         row = db.execute('SELECT * FROM social_settings WHERE user_id=?', (user_id,)).fetchone()
         return {key: bool(row[key]) if key != 'default_audience' else row[key] for key in ('accept_requests','sharing_enabled','default_audience','allow_comments')} if row else {'accept_requests':True,'sharing_enabled':True,'default_audience':'private','allow_comments':True}
@@ -44,7 +13,9 @@ class SocialRepository:
     def privacy(self, user_id, data=None):
         with self.connection() as db:
             if data is not None:
-                db.execute('INSERT INTO social_settings VALUES (?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET accept_requests=excluded.accept_requests,sharing_enabled=excluded.sharing_enabled,default_audience=excluded.default_audience,allow_comments=excluded.allow_comments', (user_id,data['accept_requests'],data['sharing_enabled'],data['default_audience'],data['allow_comments']))
+                db.lock()
+                db.execute('DELETE FROM social_settings WHERE user_id=?',(user_id,))
+                db.execute('INSERT INTO social_settings VALUES (?,?,?,?,?)', (user_id,data['accept_requests'],data['sharing_enabled'],data['default_audience'],data['allow_comments']))
             return self.settings(db,user_id)
 
     @staticmethod
@@ -65,7 +36,7 @@ class SocialRepository:
         if uid==target:
             raise ValueError('You cannot add yourself')
         with self.connection() as db:
-            db.execute('BEGIN IMMEDIATE')
+            db.lock()
             if not db.execute('SELECT 1 FROM users WHERE id=? AND active=1',(target,)).fetchone() or self.blocked(db,uid,target) or not self.settings(db,target)['accept_requests']:
                 raise LookupError('This person is unavailable for friend requests')
             if db.execute('SELECT 1 FROM friendships WHERE (sender=? AND recipient=?) OR (sender=? AND recipient=?)',(uid,target,target,uid)).fetchone():
@@ -90,7 +61,7 @@ class SocialRepository:
             if not db.execute('SELECT 1 FROM users WHERE id=?',(target,)).fetchone():
                 raise LookupError('User not found')
             if enabled:
-                db.execute('INSERT OR IGNORE INTO social_blocks VALUES (?,?)',(uid,target))
+                db.insert_once('social_blocks',{'blocker':uid,'blocked':target})
                 db.execute('DELETE FROM friendships WHERE (sender=? AND recipient=?) OR (sender=? AND recipient=?)',(uid,target,target,uid))
             else:
                 db.execute('DELETE FROM social_blocks WHERE blocker=? AND blocked=?',(uid,target))
@@ -151,7 +122,7 @@ class SocialRepository:
     def like(self,uid,pid,enabled):
         with self.connection() as db:
             self.visible_post(db,uid,pid)
-            if enabled: db.execute('INSERT OR IGNORE INTO social_likes VALUES (?,?)',(pid,uid))
+            if enabled: db.insert_once('social_likes',{'post_id':pid,'user_id':uid})
             else: db.execute('DELETE FROM social_likes WHERE post_id=? AND user_id=?',(pid,uid))
 
     def comment(self,uid,pid,text):
