@@ -45,6 +45,7 @@ createApp({
       try {
         await request('/auth/logout', 'POST');
         window.dispatchEvent(new Event('posturepal:account-changed'));
+        try { localStorage.setItem('posturepal.auth.changed',String(Date.now())); } catch {}
         token.value = ''; authenticated.value = false; form.value = null; deleting.value = null;
         notice.value = ''; exercises.value = []; dashboard.value = null; view.value = 'dashboard';
       } catch(e) { error.value = e.message; }

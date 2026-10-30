@@ -1,5 +1,8 @@
 """Composition root for the FastAPI application."""
 import argparse
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
 import os
 from pathlib import Path
 
@@ -12,6 +15,9 @@ from posturepal.users.presentation.http import create_user_router, current_user_
 from posturepal.social.infrastructure.repository import SocialRepository
 from posturepal.social.application.community import Community
 from posturepal.social.presentation.http import create_social_router
+from posturepal.activity.infrastructure.repository import ActivityRepository
+from posturepal.activity.application.tracker import ActivityTracker
+from posturepal.activity.presentation.http import create_activity_router
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -22,6 +28,19 @@ from posturepal.security.admin import admin_dependency
 from posturepal.breaks.application.coach import BreakCoach
 from posturepal.breaks.presentation.http import create_break_router
 from posturepal.movement.presentation.http import create_router
+
+class ActivityAccessLogFilter(logging.Filter):
+    """Avoid recording habit IDs/dates from private activity request paths."""
+    def filter(self, record):
+        args = record.args
+        return not (isinstance(args,tuple) and len(args)>=3
+                    and '/api/v1/me/daily-activity' in str(args[2]))
+
+
+access_logger=logging.getLogger('uvicorn.access')
+if not any(isinstance(item,ActivityAccessLogFilter) for item in access_logger.filters):
+    access_logger.addFilter(ActivityAccessLogFilter())
+
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = (ROOT / "VERSION").read_text().strip()
@@ -51,6 +70,26 @@ def create_app(database_path: Path | None = None, admin_token: str | None = None
             return
         return token_admin(None)
 
+    activity = ActivityTracker(ActivityRepository(database))
+    activity.repository.purge(activity.today())
+    @asynccontextmanager
+    async def lifespan(application):
+        async def retention_cleanup():
+            while True:
+                await asyncio.sleep(3600)
+                try:
+                    await asyncio.to_thread(activity.repository.purge,activity.today())
+                except Exception:
+                    logging.getLogger(__name__).error('Daily activity retention cleanup failed; retrying next hour')
+        task=asyncio.create_task(retention_cleanup())
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+    app.router.lifespan_context=lifespan
+    app.include_router(create_activity_router(activity,current_user))
     app.include_router(create_social_router(Community(SocialRepository(accounts.repository)), current_user, accounts.repository))
     app.include_router(create_user_router(accounts, require_admin, current_user))
     app.include_router(create_router(MovementLibrary(repository), require_admin))

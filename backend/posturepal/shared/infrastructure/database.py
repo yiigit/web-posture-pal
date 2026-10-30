@@ -52,6 +52,9 @@ table('social_blocks',user_ref('blocker',True),user_ref('blocked',True))
 posts=table('social_posts',string('id',36,True),user_ref(),string('kind',16),Column('text',Text,nullable=False),string('audience',16),number('created_at'))
 table('social_likes',post_ref(True),user_ref(primary=True))
 comments=table('social_comments',string('id',36,True),post_ref(),user_ref(),Column('text',Text,nullable=False),number('created_at'))
+table('daily_activity',user_ref(primary=True),string('day',10,True),Column('habits',Text,nullable=False),number('breaks','0'))
+table('daily_break_events',user_ref(primary=True),string('event_id',36,True),string('day',10))
+
 Index('social_posts_created',posts.c.created_at)
 Index('social_comments_post',comments.c.post_id)
 

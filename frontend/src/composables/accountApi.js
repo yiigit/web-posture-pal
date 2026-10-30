@@ -10,6 +10,7 @@ export async function accountApi(path, method = 'GET', data, token = '') {
   }
   if (method !== 'GET' && (path.startsWith('/auth/') || path.startsWith('/users/me'))) {
     window.dispatchEvent(new Event('posturepal:account-changed'));
+    try { localStorage.setItem('posturepal.auth.changed',String(Date.now())); } catch {}
   }
   return response.status === 204 ? null : response.json();
 }

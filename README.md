@@ -36,7 +36,7 @@ export POSTUREPAL_ADMIN_TOKEN="$(.venv/bin/python -c 'import secrets; print(secr
 PYTHONPATH=backend .venv/bin/python -m posturepal.server
 ```
 
-Vue 3.5.13 is vendored locally, with no npm build step. Google Fonts is optional and falls back to system fonts. Docker builds and initial Python dependency installation require internet access.
+Vue 3.5.13 is vendored locally, with no npm build step. Fonts use local/system fallbacks with no automatic third-party font requests. Docker builds and initial Python dependency installation require internet access.
 
 ## Database configuration
 
@@ -82,13 +82,13 @@ The demo adds four profiles, two friendships, one incoming friend request, five 
 - Light, Dark, Sportive, and Nike Orange themes, selectable under Appearance in the header and saved in this browser. Theme preferences work offline; blocked browser storage falls back to an in-memory selection.
 - Database-backed exercise CRUD, a secured management screen, and a versioned API with structured errors.
 
-Favorites belong to the current browser. Timers count active page ticks; background tabs can throttle them. Accounts and profiles are supported; there is no webcam monitoring. Daily habit and break completion progress belongs to the current browser.
+Favorites remain browser-local. Guest daily habits and break counts remain in the browser; signed-in users save daily activity privately to their account. Accounts and profiles are supported; there is no webcam monitoring.
 
 All pages share persistent left navigation. On narrow screens it becomes an icon rail with accessible link labels.
 
 ## Home dashboard
 
-The default start page (`/`) shows today's completed breaks, daily habit progress, catalog size and saved-movement count. Check off habits directly from the dashboard, start a break, open a desk/phone posture check, or explore the movement library. Metrics come from the live catalog and this browser's daily progress; unavailable API data shows an error with retry instead of fabricated counts. The statistics section adds a daily habit completion chart, completed-break total, body-area coverage chart, quick-movement count, average catalog duration and saved-library percentage. Statistics update when habits change or catalog data refreshes; unknown data shows loading/error states. No historical activity or actual workout time is inferred. The protected admin dashboard remains at `/admin.html`.
+The default start page (`/`) shows today's completed breaks, daily habit progress, catalog size and saved-movement count. Check off habits directly from the dashboard, start a break, open a desk/phone posture check, or explore the movement library. Metrics come from the live catalog and private account activity when signed in, or guest browser progress otherwise; unavailable API data shows an error with retry instead of fabricated counts. The statistics section adds a daily habit completion chart, completed-break total, body-area coverage chart, quick-movement count, average catalog duration and saved-library percentage. Statistics update when habits change or catalog data refreshes; unknown data shows loading/error states. No historical activity or actual workout time is inferred. The protected admin dashboard remains at `/admin.html`.
 
 ## Enhanced breaks and daily habits
 
@@ -98,9 +98,9 @@ Open **http://127.0.0.1:8000/breaks.html**, or choose **Breaks & daily habits** 
 - Read the instructions and start a timed break; pause, resume or reset as needed. Only completed timers increase today's break count.
 - Start optional reminders every 20, 30, 45 or 60 minutes. Snooze for five minutes or skip a reminder. Reminders run only while this page is open; background tabs can delay alerts. They are not OS notifications.
 - Check your posture in desk or phone-use contexts. These are manual self-checks and reset when you switch context.
-- Tick daily movement habits. Habit checkmarks and completed-break counts are saved in localStorage and reset on the next local calendar day. There is no server-side personal health history or account synchronization.
+- Tick daily movement habits. Guests keep the current local day in the browser. Signed-in users save private daily aggregates to their account for 90 days, synchronized across devices. A new local day starts a fresh checklist. No guest history is automatically uploaded, and daily activity is never shared automatically.
 
-The break timer uses elapsed wall-clock time, so returning from a background tab updates the remaining duration. A paused timer stays paused. Refreshing the page clears active timers and reminders, but keeps today's saved progress. Break routine definitions are a separate coaching module, independent of CRUD-managed exercise catalog entries.
+The break timer uses elapsed wall-clock time, so returning from a background tab updates the remaining duration. A paused timer stays paused. Refreshing the page clears active timers and reminders, but retrieves today's activity from the appropriate guest/account store. Break routine definitions are a separate coaching module, independent of CRUD-managed exercise catalog entries.
 
 Movement guidance references [NHS sitting exercises](https://www.nhs.uk/live-well/exercise/sitting-exercises/) and [OSHA workstation positions](https://www.osha.gov/etools/computer-workstations/positions). Choose comfortable movements and stop if symptoms worsen.
 
@@ -128,6 +128,25 @@ Use HTTPS when deploying beyond localhost: bearer tokens must not travel over pl
 `backend/posturepal/users` contains account/profile domain models, account use cases, SQLAlchemy-backed storage and HTTP contracts.
 
 `backend/posturepal/breaks` is a separate bounded context with domain models, coaching application logic and typed read-only HTTP endpoints. `frontend/src/composables/useDailyHabits.js` owns local daily progress and calendar rollover.
+
+## Daily activity privacy
+
+Signed-in users save habit checkmarks and completed-break counts to their own accounts; guests record only in browser storage. `/account.html` has daily activity export and deletion controls. `/privacy.html` explains the user-facing behavior. A 90-day retention window applies to server-side activity, with startup/hourly cleanup. No automatic social publication or guest-to-account history upload occurs. Account deletion cascades to activity records.
+
+Endpoints (own session only; mutations also require the existing CSRF header, and all requests require `X-PosturePal-User` matching the signed-in user ID):
+
+- `GET/DELETE /api/v1/me/daily-activity` — export retained activity / delete activity history
+- `GET /api/v1/me/daily-activity/{YYYY-MM-DD}` — read a daily aggregate
+- `PUT /api/v1/me/daily-activity/{YYYY-MM-DD}/habits/{id}` — set a validated habit's completed flag
+- `POST /api/v1/me/daily-activity/{YYYY-MM-DD}/breaks` — record an idempotent UUID break event
+
+See [PRIVACY.md](PRIVACY.md) for the safeguards, retention boundaries and GDPR/HIPAA deployment obligations. These features do not certify compliance. Encryption, backup retention, broader data-subject request handling, audits and applicable legal/organizational measures remain operator responsibilities.
+
+Client storage isolation can be tested with Node 22 (not required to run the app):
+
+```bash
+node --test tests/daily_activity.test.mjs
+```
 
 ## Friends, sharing and social statistics
 
@@ -166,7 +185,7 @@ Passwords require 12–128 characters and are salted and hashed with scrypt (`N=
 
 Set **`POSTUREPAL_SECURE_COOKIES=true`** for HTTPS deployments. It defaults to false solely to support local HTTP development. User profile/session tables share the persistent catalog database. Existing installations add these tables automatically without replacing exercise data.
 
-Password recovery is administrator-assisted through `/users.html`; no email delivery, email verification, MFA or self-service reset emails are configured. Daily habits and favorites remain browser-local and are shared by accounts using the same browser; they are not private account-synced health records.
+Password recovery is administrator-assisted through `/users.html`; no email delivery, email verification, MFA or self-service reset emails are configured. Favorites remain browser-local. Daily activity is private account data when signed in, and browser-local guest data otherwise. Server saves never fall back to guest storage on network/authentication errors. Account activity is not automatically imported from guest history.
 
 ### Account endpoints
 

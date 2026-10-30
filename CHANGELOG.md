@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Save signed-in daily activity privately to accounts while retaining separate browser-only guest progress.
+- Add owned activity APIs, idempotent break recording, export/erasure and 90-day cleanup.
+- Prevent guest history imports, cross-account event reassignment and account-to-browser fallback.
+- Add activity privacy controls/notice and document GDPR/HIPAA deployment responsibilities.
+- Remove automatic third-party font requests and test client-side storage isolation.
+
 - Use MySQL 8.4 for Docker persistence through a portable SQLAlchemy/PyMySQL layer.
 - Add an opt-in, idempotent demo fixture with profiles, social activity and friendships.
 - Add a transactional read-only SQLite-to-MySQL importer that refuses nonempty destinations.
