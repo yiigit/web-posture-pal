@@ -1,6 +1,6 @@
 [project]
 name = "posturepal"
-version = "0.10.0"
+version = "0.11.0"
 description = "A modular sitting habit coach — Movement & Exercise Library"
 requires-python = ">=3.11"
 dependencies = ["fastapi==0.115.12", "uvicorn==0.34.2", "tzdata==2025.2", "SQLAlchemy==2.0.55", "PyMySQL[rsa]==1.2.3"]

@@ -1,6 +1,6 @@
 # PosturePal
 
-A smart sitting habit coach, starting with a Movement & Exercise Library. FastAPI backend (Python 3.11+) and Vue 3 frontend. Current release: **0.10.0**.
+A smart sitting habit coach, starting with a Movement & Exercise Library. FastAPI backend (Python 3.11+) and Vue 3 frontend. Current release: **0.11.0**.
 
 ## Run with Docker
 
