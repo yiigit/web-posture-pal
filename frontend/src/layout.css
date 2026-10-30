@@ -1,0 +1,87 @@
+/* Shared page geometry, loaded after component styles on every page. */
+:root{--navigation-width:242px;--page-width:1200px;--page-gutter:clamp(16px,3vw,40px)}
+body{font-family:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
+.shell{min-height:100dvh}
+.shell>.sidebar{width:var(--navigation-width);height:100dvh}
+.shell>.content{margin-left:var(--navigation-width);min-width:0;container:page / inline-size}
+.shell>.content>main{width:100%;max-width:var(--page-width);margin-inline:auto;padding:32px var(--page-gutter) 0}
+.shell>.content>main.admin-page{padding-bottom:48px}
+.shell>.content>header{padding-inline:max(var(--page-gutter),calc((100% - var(--page-width))/2 + var(--page-gutter)));min-height:82px;height:auto;padding-block:16px;gap:16px}
+.shell>.content>header>.breadcrumb{min-width:0;line-height:1.6}
+main h1,main h2,main h3,main p,main small{overflow-wrap:anywhere}
+main :is(input,select,textarea,fieldset){min-width:0;max-width:100%}
+main fieldset{margin-inline:0}
+main :is(.admin-actions,.routine-actions,.reminder-controls){flex-wrap:wrap}
+main :is(.admin-fields,.dashboard-columns,.home-columns,.statistics-grid,.exercise-grid,.break-options,.coach-columns,.routine-panel,.home-movements,.award-grid){min-width:0}
+main :is(.admin-fields,.dashboard-columns,.home-columns,.statistics-grid,.exercise-grid,.break-options,.coach-columns,.routine-panel,.home-movements,.award-grid)>*{min-width:0}
+main :is(.home-panel,.coach-panel,.admin-panel,.progress-panel){padding:clamp(16px,2.2cqw,25px)}
+main .reminder-controls{flex-shrink:1}
+main .reminder-controls label{min-width:0}
+main .search{min-width:0;max-width:100%}
+main footer{gap:20px;flex-wrap:wrap;line-height:1.8}
+main .home-stats strong{overflow-wrap:anywhere}
+main .social-muted{font-size:12px;color:var(--muted);line-height:1.8}
+main .history-grid>div{min-width:0}
+main .award-card{align-items:flex-start}
+main .award-symbol{flex-shrink:0}
+main .profile-badge-details b{overflow-wrap:normal}
+@media(max-width:1150px){:root{--navigation-width:208px}}
+@media(max-width:800px){:root{--navigation-width:74px}}
+@media(max-width:540px){:root{--navigation-width:64px}.shell>.content>main{padding-top:24px}.shell>.content>header{min-height:68px;padding-block:12px}}
+
+/* Breakpoints use the space left after navigation, rather than viewport width. */
+@container page (max-width:1000px){
+ .break-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .award-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .home-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .history-month{grid-template-columns:repeat(7,minmax(0,1fr))}
+ .toolbar{flex-wrap:wrap;align-items:stretch}
+}
+@container page (max-width:850px){
+ .home-columns,.coach-columns,.dashboard-columns{grid-template-columns:1fr}
+ .routine-panel{grid-template-columns:1fr}
+ .exercise-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .reminder-panel{flex-direction:column;align-items:stretch}
+ .reminder-controls{justify-content:flex-start}
+ .statistics-grid{grid-template-columns:1fr}
+ .progress-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-list li{flex-wrap:wrap;align-items:flex-start}
+ .user-actions{justify-content:flex-start}
+ .admin-navigation{flex-wrap:wrap}
+}
+@container page (max-width:600px){
+ .admin-fields{grid-template-columns:1fr}
+ .admin-fields .wide{grid-column:auto}
+ .award-grid{grid-template-columns:1fr}
+ .history-grid,.history-month{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
+ .catalog-stat-cards{grid-template-columns:1fr;gap:16px}
+ .home-movements{grid-template-columns:1fr}
+ .home-section-heading,.section-heading,.coach-section-heading{flex-wrap:wrap;align-items:flex-start}
+ .hero{min-height:0}
+ .hero-copy{width:100%;padding:24px}
+ .hero-art{display:none}
+ .hero h2{max-width:none}
+ .hero-copy p{max-width:none}
+ .hero .primary{max-width:100%}
+ .toolbar{flex-direction:column}
+ .search{width:100%}
+ .search input{width:100%;min-width:0}
+ .profile-badge-details,.profile-badge-arrow{display:none}
+ .theme-picker>span{display:none}
+ .progress-live{font-size:9px}
+}
+@container page (max-width:420px){
+ .exercise-grid,.break-options{grid-template-columns:1fr}
+ .hero-copy{padding:22px 18px}
+ .home-stats{gap:12px}
+ .home-stats article{padding:14px 12px}
+ .home-stats strong{font-size:25px}
+ .reminder-panel{padding:20px 16px}
+ .reminder-controls{align-items:flex-start}
+ .progress-overview{gap:18px 12px}
+ .progress-heading{gap:10px}
+ .comment-form{flex-wrap:wrap}
+ .comment-form label{flex-basis:100%}
+ .social-statistics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .social-people .admin-actions{margin-left:0}
+}

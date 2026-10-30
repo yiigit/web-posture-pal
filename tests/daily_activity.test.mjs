@@ -87,3 +87,35 @@ test('blocked browser storage preserves in-memory guest progress on focus',async
   assert.match(activity.storageWarning.value,/visit only/);
  }finally{env.cleanup();}
 });
+
+test('visible-page polling refreshes account progress and hidden tabs skip polling',async()=>{
+ const env=environment('user-a'),originalInterval=globalThis.setInterval,pollers=[];
+ globalThis.setInterval=(fn,delay)=>{if(delay===15000)pollers.push(fn);return originalInterval(fn,delay);};
+ try{
+  const activity=useDailyHabits();await ready(activity);
+  env.state.records.set('user-a:'+day(),{day:day(),habits:['desk-check'],breaks:4});
+  pollers[0]();await tick();await tick();
+  assert.equal(activity.completedBreaks.value,4);
+  assert.deepEqual(activity.completedHabits.value,['desk-check']);
+  globalThis.document={visibilityState:'hidden'};
+  const count=env.state.requests.length;pollers[0]();await tick();
+  assert.equal(env.state.requests.length,count);
+ }finally{env.cleanup();globalThis.setInterval=originalInterval;delete globalThis.document;}
+});
+
+test('an older poll response cannot overwrite a newly saved habit',async()=>{
+ const env=environment('user-a'),originalInterval=globalThis.setInterval,pollers=[];
+ globalThis.setInterval=(fn,delay)=>{if(delay===15000)pollers.push(fn);return originalInterval(fn,delay);};
+ try{
+  const activity=useDailyHabits();await ready(activity);
+  const originalFetch=globalThis.fetch;let finishPoll;
+  globalThis.fetch=async(path,options)=>{
+   if(path.includes('daily-activity')&&options.method==='GET')return new Promise(resolve=>{finishPoll=()=>resolve(Response.json({day:day(),habits:[],breaks:0}));});
+   return originalFetch(path,options);
+  };
+  pollers[0]();await tick();
+  await activity.toggleHabit('first-task');
+  finishPoll();await tick();await tick();
+  assert.deepEqual(activity.completedHabits.value,['first-task']);
+ }finally{env.cleanup();globalThis.setInterval=originalInterval;}
+});

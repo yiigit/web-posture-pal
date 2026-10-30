@@ -1,3 +1,4 @@
+import ProgressPanel from './components/ProgressPanel.js';
 import SocialSummary from './components/SocialSummary.js';
 import ProfileBadge from './components/ProfileBadge.js';
 import { createApp, ref, computed } from '/vendor/vue.esm-browser.prod.js';
@@ -9,7 +10,7 @@ import AppSidebar from './components/AppSidebar.js';
 import MovementFigure from './components/MovementFigure.js';
 
 createApp({
-  components: { SocialSummary, ProfileBadge, MovementFigure, AppSidebar },
+  components: { ProgressPanel, SocialSummary, ProfileBadge, MovementFigure, AppSidebar },
   setup() {
     const theme = useTheme(), library = useLibrary(), daily = useDailyHabits();
     const habits = ref([]), habitError = ref(''), habitsLoading = ref(true);
@@ -55,6 +56,7 @@ createApp({
     <div class="home-columns"><section class="home-panel" aria-labelledby="habits-title"><div class="home-section-heading"><h2 id="habits-title">Your daily habits</h2><a href="/breaks.html" class="text-button">View all →</a></div><p class="home-muted">Small actions, tied to everyday moments.</p><p v-if="habitsLoading" role="status">Loading today's habits…</p><div v-else-if="habitError" role="alert"><p>{{ habitError }}</p><button class="secondary" @click="loadHabits">Try again</button></div><template v-else><progress :max="Math.max(habits.length,1)" :value="completedCount" aria-label="Daily habit completion"></progress><div class="home-habits"><label v-for="habit in habits" :key="habit.id"><input type="checkbox" :disabled="!activityReady || savingActivity" :checked="completedHabits.includes(habit.id)" @change="toggleHabit(habit.id)"><span><b>{{ habit.name }}</b><small>{{ habit.cue }}</small></span></label></div><p v-if="habits.length && completedCount === habits.length" class="success" role="status">All your daily habits checked. Nicely done.</p></template><p v-if="storageWarning" role="status" class="home-muted">{{ storageWarning }}</p></section>
     <section class="home-panel" aria-labelledby="next-title"><h2 id="next-title">What feels right now?</h2><a class="home-action" href="/breaks.html"><span>01</span><div><h3>Find your reset</h3><p>Standard, comfort, strength, or movement-habit breaks.</p></div><b>↗</b></a><a class="home-action" href="/breaks.html#posture-title"><span>02</span><div><h3>Check your setup</h3><p>A quick self-check for desk work or phone use.</p></div><b>↗</b></a><a class="home-action" href="/library.html"><span>03</span><div><h3>Explore a movement</h3><p>Browse the library and save something for later.</p></div><b>↗</b></a><div class="home-note">{{ activityNotice }} No pressure to do it all.</div></section></div>
     <section class="home-panel home-library" aria-labelledby="explore-title"><div class="home-section-heading"><h2 id="explore-title">A little movement inspiration</h2><a class="text-button" href="/library.html">Explore library →</a></div><p v-if="loading" role="status">Loading movements…</p><div v-else-if="error" role="alert"><p>{{ error }}</p><button class="secondary" @click="load">Try again</button></div><p v-else-if="!exercises.length" class="home-muted">Your movement library is empty. An administrator can add movements.</p><div v-else class="home-movements"><a v-for="item in exercises.slice(0,3)" :key="item.id" href="/library.html" class="home-movement"><movement-figure :kind="item.symbol"/><span>{{ item.area }} · {{ item.duration }} sec</span><h3>{{ item.name }} ↗</h3><p>{{ item.description }}</p></a></div></section>
+    <progress-panel :day="day" :mode="activityMode" :identity="activityIdentity" :habits="completedHabits" :breaks="completedBreaks" :ready="activityReady" :saving="savingActivity"/>
     <social-summary/>
     <footer><span>✳ Made for your everyday, not your personal best.</span><span>PosturePal v0.10.0</span></footer></main></div>
   </div>`

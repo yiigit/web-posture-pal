@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from posturepal.activity.domain.progress import summarize_progress
 from posturepal.activity.domain.rules import HABIT_IDS, RETENTION_DAYS, validate_day
 
 
@@ -29,3 +30,7 @@ class ActivityTracker:
 
     def delete(self,uid):
         self.repository.delete(uid)
+
+    def progress(self,uid,day,days=7):
+        validate_day(day,self.today(),write=True)
+        return summarize_progress(self.repository.export(uid,self.today()),day,days)

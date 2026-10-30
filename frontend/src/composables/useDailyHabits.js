@@ -10,7 +10,7 @@ export function useDailyHabits() {
   const day=ref(localDay()),completedHabits=ref([]),completedBreaks=ref(0),storageWarning=ref('');
   const activityReady=ref(false),savingActivity=ref(false),activityMode=ref('loading'),activityIdentity=ref(null);
   const activityNotice=ref('Checking how to save your activity…');
-  let userId=null,epoch=0,disposed=false;
+  let userId=null,epoch=0,disposed=false,mutation=0;
   function clear(){completedHabits.value=[];completedBreaks.value=0;}
   function apply(data){completedHabits.value=Array.isArray(data.habits)?data.habits:[];completedBreaks.value=Number.isSafeInteger(data.breaks)&&data.breaks>=0?data.breaks:0;}
   async function accountRequest(path,method='GET',payload,identity=userId){
@@ -52,7 +52,7 @@ export function useDailyHabits() {
   async function save(kind,id){
     if(!activityReady.value||savingActivity.value)return;
     if(day.value!==localDay()){await load();if(!activityReady.value)return;}
-    const current=epoch,identity=userId;
+    const current=epoch,identity=userId;mutation++;
     if(activityMode.value==='guest'){
       if(kind==='habit')completedHabits.value=completedHabits.value.includes(id)?completedHabits.value.filter(x=>x!==id):[...completedHabits.value,id];
       else completedBreaks.value++;
@@ -89,13 +89,22 @@ export function useDailyHabits() {
       const link=document.createElement('a');link.href=url;link.download='posturepal-daily-activity.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }catch{storageWarning.value='Could not export activity. Please try again.';}
   }
+  async function refreshActivity(){
+    if(!activityReady.value||savingActivity.value||activityMode.value!=='account')return;
+    const current=epoch,identity=userId,observedMutation=mutation;
+    try{
+      const data=await accountRequest('/'+day.value,'GET',undefined,identity);
+      if(!disposed&&current===epoch&&observedMutation===mutation&&!savingActivity.value)apply(data);
+    }catch{if(!disposed&&current===epoch)load();}
+  }
+  const liveTimer=setInterval(()=>{if(typeof document==='undefined'||document.visibilityState==='visible')refreshActivity();},15000);
   function focus(){if(!savingActivity.value)load();}
   function sync(event){if([guestKey,'posturepal.auth.changed','posturepal.activity.changed'].includes(event.key))focus();}
   function changed(){load();}
   const timer=setInterval(()=>{if(day.value!==localDay()&&!savingActivity.value)load();},1000);
   window.addEventListener('storage',sync);window.addEventListener('focus',focus);
   window.addEventListener('posturepal:account-changed',changed);window.addEventListener('posturepal:activity-changed',focus);
-  onUnmounted(()=>{disposed=true;epoch++;clearInterval(timer);window.removeEventListener('storage',sync);window.removeEventListener('focus',focus);window.removeEventListener('posturepal:account-changed',changed);window.removeEventListener('posturepal:activity-changed',focus);});
+  onUnmounted(()=>{disposed=true;epoch++;clearInterval(timer);clearInterval(liveTimer);window.removeEventListener('storage',sync);window.removeEventListener('focus',focus);window.removeEventListener('posturepal:account-changed',changed);window.removeEventListener('posturepal:activity-changed',focus);});
   load();
   return{day,completedHabits,completedBreaks,storageWarning,activityReady,savingActivity,activityMode,activityIdentity,activityNotice,retryActivity:load,toggleHabit:id=>save('habit',id),recordBreak:async(expectedIdentity=activityIdentity.value)=>{
     const deadline=Date.now()+30000;

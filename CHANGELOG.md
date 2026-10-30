@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Align page widths, header gutters and panel spacing across all screens.
+- Use content-container breakpoints for cards, achievements, forms and history grids.
+- Prevent cramped controls and hero artwork overlap on narrow layouts.
+
+- Add private derived badges, trophies, levels, capped daily points and motivational feedback.
+- Add 7/30-day progress grids and visible-page polling for near-real-time account activity updates.
+- Keep guest achievements today-only and erase derived progress with activity history.
+
 - Save signed-in daily activity privately to accounts while retaining separate browser-only guest progress.
 - Add owned activity APIs, idempotent break recording, export/erasure and 90-day cleanup.
 - Prevent guest history imports, cross-account event reassignment and account-to-browser fallback.

@@ -1,6 +1,6 @@
 from datetime import date
 from uuid import UUID
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from posturepal.users.domain.models import User
 
@@ -35,6 +35,10 @@ def create_activity_router(tracker,current_user):
     @router.delete('',status_code=204)
     def delete(user:User=Depends(identity)):
         tracker.delete(user.id)
+
+    @router.get('/progress')
+    def progress(day:date,days:int=Query(7,ge=1,le=30),user:User=Depends(identity)):
+        return call(lambda:tracker.progress(user.id,day,days))
 
     @router.get('/{day}')
     def read(day:date,user:User=Depends(identity)):

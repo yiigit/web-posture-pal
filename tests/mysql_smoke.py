@@ -62,6 +62,9 @@ def validate(url):
             assert client.post(activity_path+'/breaks',json=event).json()['breaks']==1
             assert client.post(activity_path+'/breaks',json=event).json()['breaks']==1
             assert len(client.get('/api/v1/me/daily-activity').json()['daily_activity'])==1
+            progress=client.get('/api/v1/me/daily-activity/progress?day='+datetime.now(timezone.utc).date().isoformat()).json()
+            assert progress['totals']['breaks']==1
+            assert any(award['id']=='first-break' and award['earned'] for award in progress['awards'])
             assert client.delete('/api/v1/me/daily-activity').status_code==204
             assert client.get(activity_path).json()['breaks']==0
             stats=client.get('/api/v1/social/statistics').json()

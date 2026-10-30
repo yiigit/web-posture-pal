@@ -12,6 +12,12 @@ PosturePal provides privacy safeguards; this repository is not a GDPR/HIPAA comp
 - Persistence: MySQL stores daily aggregates and random event identifiers for idempotency; no activity payloads are logged. Private activity paths are excluded from Uvicorn access logs to avoid logging habit IDs/dates; operators must also configure upstream proxies and infrastructure logs appropriately. Dates follow the browser's local calendar; the account time-zone preference does not reassign existing days.
 - Favorites are still browser-local, independent of account daily activity.
 
+## Derived achievements and live updates
+
+Badges, trophies, points and progress grids are derived from the same retained daily aggregates. No separate permanent achievement history, personal ranking or new activity telemetry is stored. Clearing activity removes its derived achievements; retention expiry and unchecked habits can also change progress. Guests receive today-only badges computed in the browser. Signed-in endpoints enforce the same owner/session identity checks as daily activity.
+
+Visible signed-in pages poll activity/progress every 15 seconds. Hidden tabs pause polling. Refresh payloads are never written into guest storage or shared socially. Motivational messages contain no diagnosis or medical prediction. Extra breaks beyond three per day do not add points, reducing incentives to chase excessive activity.
+
 ## User controls
 
 `/account.html` includes an activity privacy panel. Signed-in users can download retained daily activity as JSON or delete it from the active database. Guests can export/delete this browser's current daily activity. Export is scoped to daily activity, not a comprehensive subject-access export of profiles/social records.

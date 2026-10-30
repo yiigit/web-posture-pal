@@ -129,6 +129,18 @@ Use HTTPS when deploying beyond localhost: bearer tokens must not travel over pl
 
 `backend/posturepal/breaks` is a separate bounded context with domain models, coaching application logic and typed read-only HTTP endpoints. `frontend/src/composables/useDailyHabits.js` owns local daily progress and calendar rollover.
 
+## Achievements, progress and motivation
+
+The dashboard and breaks page include an Achievements & momentum panel with badges, trophies, levels, motivational feedback and a 7/30-day activity grid. Signed-in progress is computed privately from the retained 90-day activity window. Guest badges are calculated entirely in the browser from today's local progress; no guest activity is sent to this API.
+
+- Badges: first recorded break, first checked habit, and a day with all four habits checked.
+- Trophies: ten recorded breaks, seven active days, and thirty active days. Active days need not be consecutive; rest days carry no penalty.
+- Points: 10 per active day, 5 per habit checkmark, and 10 per break for up to three breaks each day. Each 100 points advances a level. Extra breaks still count toward recorded totals but do not create unlimited daily points.
+- Updates: local saves are reactive; visible signed-in pages poll every 15 seconds for cross-tab/device changes. This is near-real-time refresh, not sensor monitoring or server push. Hidden tabs pause polling.
+- Privacy: no leaderboard, automatic social publication or separate permanent award ledger. Awards/points may change when habits are unchecked, activity is erased, or older records expire. These are self-reported wellbeing actions, not verified workout/medical outcomes.
+
+Own-account endpoint: `GET /api/v1/me/daily-activity/progress?day=YYYY-MM-DD&days=7` (up to 30 display days). It requires the existing session and matching `X-PosturePal-User` header. Progress remains inaccessible to friends and bootstrap admin tokens.
+
 ## Daily activity privacy
 
 Signed-in users save habit checkmarks and completed-break counts to their own accounts; guests record only in browser storage. `/account.html` has daily activity export and deletion controls. `/privacy.html` explains the user-facing behavior. A 90-day retention window applies to server-side activity, with startup/hourly cleanup. No automatic social publication or guest-to-account history upload occurs. Account deletion cascades to activity records.

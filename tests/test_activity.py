@@ -92,3 +92,18 @@ class ActivityTests(unittest.TestCase):
         with self.app.state.database.connection() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM daily_activity WHERE user_id=?',(self.users[0].id,)).fetchone()[0],0)
             self.assertEqual(db.execute('SELECT count(*) FROM daily_break_events WHERE user_id=?',(self.users[0].id,)).fetchone()[0],0)
+
+    def test_progress_is_private_and_recalculates_after_erasure(self):
+        endpoint=self.base+'/progress?day='+self.day+'&days=7'
+        with TestClient(self.app) as guest:
+            self.assertEqual(guest.get(endpoint).status_code,401)
+        self.assertEqual(self.a.get(endpoint,headers={'X-PosturePal-User':self.users[1].id}).status_code,409)
+        self.a.post(self.base+'/'+self.day+'/breaks',json={'event_id':str(uuid4())})
+        result=self.a.get(endpoint)
+        self.assertEqual(result.status_code,200,result.text)
+        self.assertEqual(result.json()['totals']['breaks'],1)
+        self.assertEqual(self.b.get(endpoint).json()['totals']['breaks'],0)
+        self.assertEqual(self.a.get(endpoint.replace('days=7','days=999')).status_code,422)
+        self.a.delete(self.base)
+        self.assertEqual(self.a.get(endpoint).json()['points'],0)
+        self.assertTrue(all(not award['earned'] for award in self.a.get(endpoint).json()['awards']))
