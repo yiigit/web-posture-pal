@@ -1,0 +1,10 @@
+#!/bin/sh
+# Validate Conventional Commits using the project's development environment.
+if [ -x .venv/bin/cz ]; then
+    exec .venv/bin/cz check --commit-msg-file "$1"
+elif command -v cz >/dev/null 2>&1; then
+    exec cz check --commit-msg-file "$1"
+else
+    echo 'Commitizen is required: install requirements-dev.txt in .venv.' >&2
+    exit 1
+fi

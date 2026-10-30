@@ -167,20 +167,42 @@ Unknown exercises and API routes return HTTP 404 with a JSON `detail` field. Ope
 PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 ```
 
-## Versioning
+## Versioning with Commitizen
 
-`VERSION` is the canonical release number; keep `pyproject.toml`, the frontend footer, and the Compose image tag in sync. Use semantic versioning: patch for compatible fixes, minor for new features, major for breaking changes. During 0.x development, minor releases may change contracts. See `CHANGELOG.md`.
+Commitizen manages semantic versions through `pyproject.toml` (`project.version`) and synchronizes `VERSION`, the Compose image tag, frontend release labels and the current release line in this README. `VERSION` remains the runtime version file. Changelog history is preserved and new release entries are generated from Conventional Commits.
 
-## Git releases
+Install development dependencies and enable the local commit-message hook once per checkout:
 
-The repository uses the `main` branch and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history.
+```bash
+.venv/bin/python -m pip install -r requirements-dev.txt
+git config core.hooksPath .githooks
+```
 
-For a new release, update `VERSION`, `pyproject.toml`, the Compose image tag, frontend version labels and `CHANGELOG.md`, run the relevant tests, then commit and tag:
+Stage changes and use Commitizen's interactive commit command:
 
 ```bash
 git add <changed-files>
-git commit -m "Release <version>"
-git tag -a v<version> -m "PosturePal <version>"
+.venv/bin/cz commit
 ```
 
-Configure your remote before publishing. Push the branch and tags explicitly with `git push -u origin main` and `git push origin --tags`. Environment secrets, local tooling, databases and virtual environments are excluded from Git.
+Ordinary `git commit` also works with Conventional Commit messages, enforced by the hook. Examples:
+
+- `feat(social): add activity filters` → minor release
+- `fix(profile): refresh avatar after sign-in` → patch release
+- `docs: clarify Docker setup` or `chore: update tooling` → no automatic release
+- `feat!: change the session API` → breaking change (minor while on 0.x)
+
+Run the relevant checks before releasing. Preview, then create the release:
+
+```bash
+.venv/bin/cz bump --dry-run --check-consistency
+.venv/bin/cz bump --check-consistency
+```
+
+The release command updates version files and the changelog, commits the release and creates an annotated `v<version>` tag. Keep the worktree clean before bumping. `major_version_zero = true` keeps releases in 0.x until an explicit stable release decision; switch it off before releasing 1.0.0. Do not edit release numbers individually.
+
+## Git releases
+
+The repository uses the `main` branch and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history. The original initial commit predates Conventional Commit validation; subsequent commits follow Commitizen rules.
+
+Configure your remote before publishing. Push the branch and tags explicitly with `git push -u origin main` and `git push origin --tags`. Environment secrets, local tooling, databases and virtual environments are excluded from Git. Commitizen does not publish remotely.
