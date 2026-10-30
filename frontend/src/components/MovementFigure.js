@@ -1,0 +1,4 @@
+export default {
+  props: ['kind'],
+  template: `<svg viewBox="0 0 240 160" fill="none" aria-hidden="true"><ellipse cx="120" cy="147" rx="54" ry="5" fill="currentColor" opacity=".09"/><g stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle :cx="kind === 'neck' ? 130 : 120" cy="35" r="13" fill="var(--figure-fill, #eff1df)"/><path d="M120 57 L120 99 M120 99 L99 141 M120 99 L143 141"/><path v-if="kind === 'reach' || kind === 'chest'" d="M120 65 L91 49 L79 22 M120 65 L149 49 L161 22"/><path v-else-if="kind === 'twist'" d="M120 65 L92 80 L79 65 M120 65 L149 74 L161 60"/><path v-else-if="kind === 'wrists'" d="M120 65 L94 86 L76 74 M120 65 L146 86 L164 74"/><path v-else d="M120 65 L91 91 M120 65 L149 91"/></g><g stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".45"><path d="M170 34 Q188 58 171 76 M173 69 L170 77 L179 75"/><path d="M67 109 Q54 87 66 69"/></g></svg>`
+};

@@ -1,0 +1,221 @@
+/* Shared color contract. Layout and components consume these tokens. */
+:root {
+  color-scheme: light;
+  --text: #263e34;
+  --page: #fbfcf9;
+  --surface: #ffffff;
+  --green: #285b49;
+  --hover: #1e493a;
+  --on-accent: #ffffff;
+  --accent: #56743e;
+  --muted: #66715e;
+  --line: #dde3d6;
+  --soft: #edf1e7;
+  --hero: #eef1df;
+  --figure: #74866b;
+  --figure-fill: #eff1df;
+  --orbit: #e3e8cd;
+  --orbit-line: #d2dbbb;
+  --tag: #ffffffdc;
+  --art: #edf0e3;
+  --art-warm: #f1e9dd;
+  --figure-warm: #967555;
+  --art-cool: #e7edf0;
+  --figure-cool: #658192;
+  --art-purple: #eae7f0;
+  --figure-purple: #89739f;
+  --overlay: #16271db3;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --text: #e2ede5;
+  --page: #121b18;
+  --surface: #1a2621;
+  --green: #b6d8a0;
+  --hover: #cbe7b8;
+  --on-accent: #18251a;
+  --accent: #b6d8a0;
+  --muted: #a9b8aa;
+  --line: #3a4b3f;
+  --soft: #27382c;
+  --hero: #29392c;
+  --figure: #adbe95;
+  --figure-fill: #29392c;
+  --orbit: #324632;
+  --orbit-line: #4b6242;
+  --tag: #18251de8;
+  --art: #2c3929;
+  --art-warm: #3b332b;
+  --figure-warm: #c9ac8e;
+  --art-cool: #29383e;
+  --figure-cool: #9abac7;
+  --art-purple: #342e40;
+  --figure-purple: #bba8d4;
+  --overlay: #040a07cc;
+}
+:root[data-theme="sportive"] {
+  color-scheme: dark;
+  --text: #eef9fc;
+  --page: #10252d;
+  --surface: #17343e;
+  --green: #d2fa44;
+  --hover: #e5ff8a;
+  --on-accent: #172408;
+  --accent: #d2fa44;
+  --muted: #afc6cb;
+  --line: #36545e;
+  --soft: #23434b;
+  --hero: #183e48;
+  --figure: #d2fa44;
+  --figure-fill: #183e48;
+  --orbit: #245360;
+  --orbit-line: #427480;
+  --tag: #10252de8;
+  --art: #28453b;
+  --art-warm: #44372b;
+  --figure-warm: #ffb179;
+  --art-cool: #214552;
+  --figure-cool: #7de4f4;
+  --art-purple: #363453;
+  --figure-purple: #c2b5ff;
+  --overlay: #06161cd9;
+}
+:root[data-theme="nike"] {
+  color-scheme: light;
+  --text: #141414;
+  --page: #fffaf6;
+  --surface: #ffffff;
+  --green: #ff5a00;
+  --hover: #e94f00;
+  --on-accent: #141414;
+  --accent: #ae3900;
+  --muted: #6b574d;
+  --line: #e8d5c8;
+  --soft: #ffeadb;
+  --hero: #ff5a00;
+  --figure: #222222;
+  --figure-fill: #ffe4d1;
+  --orbit: #ff7b32;
+  --orbit-line: #d94400;
+  --tag: #fffaf3f0;
+  --art: #ffe4d1;
+  --art-warm: #ffd1ae;
+  --figure-warm: #6d2b0b;
+  --art-cool: #f0e7e0;
+  --figure-cool: #34302d;
+  --art-purple: #f5bc91;
+  --figure-purple: #612709;
+  --overlay: #1a0a02bf;
+}
+/* Native controls also follow the selected color scheme. */
+.header-actions { display: flex; align-items: center; gap: 22px; }
+.theme-picker { display: flex; align-items: center; gap: 9px; font-size: 10px; color: var(--muted); }
+.theme-picker select {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 9px 26px 9px 10px;
+  min-height: 36px;
+  max-width: 170px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+.theme-picker select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.hero-art svg, .card-art svg, .modal-art svg { --figure-fill: var(--art); }
+.hero-art svg { --figure-fill: var(--hero); }
+:root[data-theme="sportive"] h1,
+:root[data-theme="sportive"] .hero h2 {
+  font-family: 'Arial Narrow', Impact, sans-serif;
+  text-transform: uppercase;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -.5px;
+}
+:root[data-theme="sportive"] .hero { border-left: 5px solid var(--accent); }
+:root[data-theme="sportive"] .hero-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(125deg, transparent 0 32px, #d2fa440a 32px 35px);
+}
+:root[data-theme="sportive"] .primary,
+:root[data-theme="sportive"] .tabs button,
+:root[data-theme="sportive"] .exercise-card { border-radius: 3px; }
+:root[data-theme="nike"] h1,
+:root[data-theme="nike"] .hero h2 {
+  font-family: Impact, 'Arial Narrow', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+:root[data-theme="nike"] h1 { font-size: clamp(32px, 3.5vw, 52px); }
+:root[data-theme="nike"] .hero h2 { font-size: clamp(32px, 3vw, 46px); }
+:root[data-theme="nike"] .hero,
+:root[data-theme="nike"] .exercise-card,
+:root[data-theme="nike"] .sidebar-note { border-radius: 0; }
+:root[data-theme="nike"] .primary,
+:root[data-theme="nike"] .tabs button.selected { border-radius: 30px; }
+:root[data-theme="nike"] .primary { font-weight: 700; }
+:root[data-theme="nike"] .card-body h3 button { font-weight: 800; }
+:root[data-theme="nike"] .brand-icon { border-radius: 50%; }
+@media (max-width: 1050px) { .header-actions .header-note { display: none; } }
+@media (max-width: 650px) {
+  .theme-picker > span { display: none; }
+  .theme-picker select { max-width: 136px; padding-right: 10px; font-size: 10px; }
+  header { gap: 12px; }
+  .breadcrumb { font-size: 9px; }
+  .breadcrumb span { margin: 0 5px; }
+}
+@media (max-width: 380px) { .breadcrumb { max-width: 120px; line-height: 1.6; } }
+:root[data-theme="nike"] .hero { border-color: var(--hero); }
+:root[data-theme="nike"] .hero p,
+:root[data-theme="nike"] .hero-copy > small { color: #411800; }
+:root[data-theme="nike"] .hero .pill { color: #141414; background: #ffffffd9; border-color: #ffffff66; }
+:root[data-theme="nike"] .hero .primary { color: #ffffff; background: #141414; border-color: #141414; }
+:root[data-theme="nike"] .hero .primary:hover { background: #333333; }
+:root[data-theme="nike"] .hero-art { color: #141414; }
+:root[data-theme="nike"] .hero-art .art-star { display: none; }
+
+:root[data-theme="nike"] .tabs button.selected,
+:root[data-theme="nike"] .primary { font-weight: 800; }
+:root[data-theme="nike"] .favorite.saved { color: #ae3900; }
+:root[data-theme="nike"] .sidebar-note { border-top: 4px solid var(--green); }
+
+.coach-link{display:flex;align-items:center;gap:11px;font-size:17px;padding:14px 12px;border-radius:7px}.coach-link span{font-size:12px;font-weight:550}.coach-link:hover{background:var(--soft)}@media(max-width:800px){.sidebar .coach-link{justify-content:center;padding:12px 0}.sidebar .coach-link span{display:none}}
+
+.navigation-active{color:var(--green);background:var(--soft)}@media(max-width:540px){.sidebar>.coach-link{margin-left:auto}}
+
+/* Shared account access in page headers. */
+.topbar-tools{display:flex;align-items:center;gap:20px;min-width:0}.profile-badge-wrap{flex-shrink:0}.profile-badge{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:8px;max-width:230px}.profile-badge:hover{background:var(--soft)}.profile-badge-avatar{width:34px;height:34px;display:grid;place-items:center;flex-shrink:0;border-radius:50%;background:var(--soft);border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--accent)}.profile-badge-details{min-width:0}.profile-badge-details b{display:block;max-width:135px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:600}.profile-badge-details small{display:block;font-size:9px;color:var(--muted);margin-top:4px}.profile-badge-arrow{font-size:12px;color:var(--muted)}.profile-badge-loading{font-size:10px;color:var(--muted)}.account-topbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:26px}@media(max-width:1050px){.topbar-tools,.header-actions{gap:10px}.profile-badge-details b{max-width:100px}}@media(max-width:650px){.profile-badge-details,.profile-badge-arrow{display:none}.profile-badge{padding:3px}.profile-badge-avatar{width:30px;height:30px}.topbar-tools,.header-actions{gap:7px}.content>header{gap:8px;min-height:65px;height:auto;padding-top:10px;padding-bottom:10px}.content>header .breadcrumb{flex:1;min-width:0;line-height:1.6}.content>header .theme-picker select{max-width:115px}.profile-badge-loading{display:block;max-width:55px;line-height:1.5;font-size:9px}}
+
+/* Persistent navigation, including short viewports and narrow screens. */
+.shell>.sidebar{overflow-y:auto;overscroll-behavior:contain;z-index:5}.shell>.sidebar nav{flex-shrink:0}.shell>.sidebar .sidebar-note{flex-shrink:0;margin-top:32px}.shell>.sidebar>.coach-link{margin-top:auto;flex-shrink:0}.shell>.sidebar .coach-link{min-height:44px}
+@media(max-width:800px){.shell>.sidebar>.coach-link{margin-left:0}.shell>.sidebar .brand{font-size:0}.shell>.sidebar .brand>span:not(.brand-icon){display:none}.shell>.sidebar .brand-icon{margin-right:0}}
+@media(max-width:540px){
+ .shell{display:flex;min-height:100dvh}
+ .shell>.sidebar{position:fixed;inset:0 auto 0 0;width:64px;height:100dvh;display:flex;flex-direction:column;align-items:stretch;padding:20px 10px;border-right:1px solid var(--line);border-bottom:0}
+ .shell>.content{margin-left:64px;min-width:0;flex:1}
+ .shell>.sidebar .brand{justify-content:center}
+ .shell>.sidebar nav{display:grid;gap:8px;margin:24px 0 16px}
+ .shell>.sidebar nav button{width:100%;font-size:21px;min-height:44px;padding:10px 0;justify-content:center}
+ .shell>.sidebar .coach-link{padding:10px 0;justify-content:center;font-size:21px}
+ .shell>.sidebar>.coach-link{margin-left:0;margin-top:auto}
+ .shell>.sidebar .brand>span:not(.brand-icon),.shell>.sidebar .workspace-label,.shell>.sidebar .sidebar-note{display:none}
+ .shell .admin-page{padding:24px 16px 40px}
+ .shell .account-topbar{gap:8px}
+ .shell .admin-heading{flex-wrap:wrap}
+ .shell .admin-fields{grid-template-columns:1fr}
+ .shell .user-access{flex-wrap:wrap}
+ .shell .coach-page{padding:24px 16px 0}
+ .shell .break-options{grid-template-columns:1fr}
+ .shell .home-section-heading{flex-wrap:wrap}
+ .shell .statistics-period{white-space:normal}
+ .shell .content>header{flex-wrap:wrap}
+ .shell .home-stats article{padding:12px}
+ .shell .home-stats strong{font-size:23px}
+ .shell .catalog-stat-cards{grid-template-columns:1fr}
+}

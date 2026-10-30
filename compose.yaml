@@ -1,0 +1,17 @@
+services:
+  posturepal:
+    build: .
+    image: posturepal:0.10.0
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      POSTUREPAL_ADMIN_TOKEN: ${POSTUREPAL_ADMIN_TOKEN:?Set POSTUREPAL_ADMIN_TOKEN in .env to a random token of at least 32 characters}
+      POSTUREPAL_SECURE_COOKIES: ${POSTUREPAL_SECURE_COOKIES:-false}
+      POSTUREPAL_DB_PATH: /app/data/posturepal.db
+    volumes:
+      - posturepal-data:/app/data
+    restart: unless-stopped
+    init: true
+
+volumes:
+  posturepal-data:
