@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.12.1 (2026-10-31)
+
 - Add GitHub CI for Python, client privacy tests, isolated MySQL integration and Docker startup.
 - Add validated GitHub releases with synchronized Commitizen versions, preserved Unreleased notes and annotated tags.
 
