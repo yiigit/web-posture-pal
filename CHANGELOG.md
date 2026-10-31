@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add GitHub CI for Python, client privacy tests, isolated MySQL integration and Docker startup.
+- Add validated GitHub releases with synchronized Commitizen versions, preserved Unreleased notes and annotated tags.
+
 ## v0.12.0 (2026-10-31)
 
 - Replace generic AI errors with safe, actionable model-access, authentication, quota, rate-limit and connection messages.

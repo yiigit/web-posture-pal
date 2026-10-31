@@ -281,14 +281,14 @@ Run the relevant checks before releasing. Preview, then create the release:
 
 ```bash
 .venv/bin/cz bump --dry-run --check-consistency
-.venv/bin/cz bump --check-consistency
+.venv/bin/python scripts/release.py prepare 0.13.0  # choose the intended version
 ```
 
 The release command updates version files and the changelog, commits the release and creates an annotated `v<version>` tag. Keep the worktree clean before bumping. `major_version_zero = true` keeps releases in 0.x until an explicit stable release decision; switch it off before releasing 1.0.0. Do not edit release numbers individually.
 
 ## Git releases
 
-The repository uses the `main` branch and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history. The original initial commit predates Conventional Commit validation; subsequent commits follow Commitizen rules.
+The repository uses `main` and `develop` branches and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history. The original initial commit predates Conventional Commit validation; subsequent commits follow Commitizen rules.
 
 Configure your remote before publishing. Push the branch and tags explicitly with `git push -u origin main` and `git push origin --tags`. Environment secrets, local tooling, databases and virtual environments are excluded from Git. Commitizen does not publish remotely.
 
@@ -318,3 +318,30 @@ The integration uses the [OpenAI Responses API](https://developers.openai.com/ap
 
 
 If the coach reports that the configured model is unavailable, OpenAI returned `model_not_found`: check the exact `POSTUREPAL_AI_MODEL` ID and that the API project can access it. After saving any local environment change, recreate the app container with `docker compose up -d --no-deps posturepal`. A ChatGPT subscription does not configure the API project. The coach distinguishes model access, API-key authentication, permissions, billing/quota, rate limits, network failures and incomplete responses using safe fixed messages; raw provider errors are never shown. See [OpenAI error codes](https://developers.openai.com/api/docs/guides/error-codes).
+
+
+## GitHub Actions and releases
+
+Two workflows live in `.github/workflows`:
+
+- **CI** runs on pull requests and pushes to `main`/`develop`. It checks version consistency, runs Python tests on 3.11 and 3.13, runs Node 22 client privacy tests, validates against an isolated MySQL 8.4 database, and builds/starts the Docker image. CI uses temporary test data and mocked AI responses; it needs no application secrets or real OpenAI key.
+- **Release** runs on pushed `v*` tags or manually through **Actions → Release → Run workflow**. Choose `main` or `develop` and enter the intended stable version without `v`. It first runs the complete CI workflow. Commitizen then synchronizes versions, moves the detailed Unreleased notes into the selected release, preserves historical notes, creates the release commit and annotated tag, pushes that branch/tag atomically, and creates a GitHub Release from those notes. Existing GitHub Releases are left unchanged.
+
+The workflows pin official checkout/setup actions to verified commit hashes. CI has read-only repository permissions; only the publication job receives `contents: write`. Releases serialize to prevent concurrent tag creation. No production database, deployment or container registry publishing is performed.
+
+Before a manual release, add meaningful notes under **Unreleased**, commit the changes and push the selected branch. Use the repository's **Actions** settings to permit GitHub Actions and the publication job's write permission. Branch/tag protection must permit the release bot to push, or maintainers must create the release locally and push its branch/tag themselves. The workflow never force-pushes or bypasses protection rules. Manual dispatch becomes available after the workflow exists on the repository's default branch.
+
+For local preparation, with a clean checkout and development dependencies installed:
+
+```bash
+.venv/bin/python scripts/release.py verify
+# Replace the example with the intended next version:
+.venv/bin/python scripts/release.py prepare 0.13.0
+.venv/bin/python scripts/release.py verify --tag v0.13.0
+```
+
+The helper wraps Commitizen and preserves curated Unreleased notes through `.github/release-notes.md.j2`. It keeps an empty Unreleased section separate from numbered releases and rejects stale version references, duplicate release headings, downgrades, non-annotated/mismatched tags, dirty worktrees and missing release notes. Only stable `major.minor.patch` versions are currently supported. It does not push or publish by itself. Use `python scripts/release.py notes --output release-notes.md` to export the current release notes outside automated publication.
+
+Pushing an annotated version tag whose commit contains these workflow files runs validation and publishes its GitHub Release without a second bump. For a failed manual publication, rerun the same version only while that release commit is still the selected branch's HEAD; the helper verifies the existing tag and skips the bump. If newer commits have landed, publish from the original version tag instead, provided that commit contains the workflows; older tags can be published manually through GitHub Releases. Manual releases publish within the same workflow because pushes made with `GITHUB_TOKEN` do not trigger another tag workflow. GitHub Releases can also be created manually from a verified existing tag after checks pass.
+
+These files must be committed and pushed before GitHub can execute them. Local workflow syntax/release-helper checks cannot establish that repository permissions and protection rules allow publication. See [GitHub workflow permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions).

@@ -93,7 +93,15 @@ Tests should use temporary databases and isolated sessions, not real user data. 
 .venv/bin/cz commit
 .venv/bin/cz bump --dry-run --check-consistency
 # Only when a release is requested/authorized, after checks and with a clean worktree:
-.venv/bin/cz bump --check-consistency
+.venv/bin/python scripts/release.py prepare 0.13.0  # choose the intended version
 ```
 
 Do not push branches/tags or publish remotely without authorization. Keep environment secrets, virtual environments, local tooling and runtime data out of Git.
+
+
+## GitHub automation
+
+- `.github/workflows/ci.yml` is reusable CI for Python, Node privacy tests, isolated MySQL and Docker startup. Never supply real application databases or OpenAI credentials to CI.
+- `.github/workflows/release.yml` validates before publishing stable annotated tags or manually selected versions from main/develop. Keep write permission limited to the publication job and preserve branch/tag protection.
+- Prefer `python scripts/release.py prepare <version>` for releases with curated Unreleased notes. This wraps Commitizen and preserves prior changelog sections; do not hand-edit version references. `verify --tag v<version>` validates release metadata and tag ownership.
+- Workflow files alone do not authorize an immediate remote push/publication. Do not run or trigger release workflows unless the user requests publication.
