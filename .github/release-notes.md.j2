@@ -1,0 +1,7 @@
+## Unreleased
+
+{% for entry in tree %}{% if loop.first %}
+## {{ entry.version }} ({{ entry.date }})
+
+{{ release_notes }}
+{% endif %}{% endfor %}

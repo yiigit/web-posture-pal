@@ -1,6 +1,6 @@
 # PosturePal
 
-A smart sitting habit coach, starting with a Movement & Exercise Library. FastAPI backend (Python 3.11+) and Vue 3 frontend. Current release: **0.10.0**.
+A smart sitting habit coach, starting with a Movement & Exercise Library. FastAPI backend (Python 3.11+) and Vue 3 frontend. Current release: **0.12.1**.
 
 ## Run with Docker
 
@@ -281,13 +281,67 @@ Run the relevant checks before releasing. Preview, then create the release:
 
 ```bash
 .venv/bin/cz bump --dry-run --check-consistency
-.venv/bin/cz bump --check-consistency
+.venv/bin/python scripts/release.py prepare 0.13.0  # choose the intended version
 ```
 
 The release command updates version files and the changelog, commits the release and creates an annotated `v<version>` tag. Keep the worktree clean before bumping. `major_version_zero = true` keeps releases in 0.x until an explicit stable release decision; switch it off before releasing 1.0.0. Do not edit release numbers individually.
 
 ## Git releases
 
-The repository uses the `main` branch and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history. The original initial commit predates Conventional Commit validation; subsequent commits follow Commitizen rules.
+The repository uses `main` and `develop` branches and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history. The original initial commit predates Conventional Commit validation; subsequent commits follow Commitizen rules.
 
 Configure your remote before publishing. Push the branch and tags explicitly with `git push -u origin main` and `git push origin --tags`. Environment secrets, local tooling, databases and virtual environments are excluded from Git. Commitizen does not publish remotely.
+
+
+## Private AI coach
+
+Open `/coach.html` or **AI coach** in the shared navigation. Sign-in is required. The page previews the exact account context and requires explicit consent before each new conversation sends anything to OpenAI. Ask about your profile, daily activity, progress, achievements or motivation. Answers are general habit guidance and may be incorrect; they are not diagnosis or treatment.
+
+Configure these server-side variables in your environment (or your local `.env` for Docker), then rebuild/restart the app:
+
+```dotenv
+OPENAI_API_KEY=
+POSTUREPAL_AI_MODEL=
+```
+
+Supply your own OpenAI API key and a Responses-compatible text model ID available to your API project. Both are required; otherwise the page explains that chat is unavailable. No key is sent to the frontend, and there is no simulated AI fallback. Configure provider spending limits separately.
+
+```bash
+docker compose up --build -d --no-deps posturepal
+```
+
+Each send includes only the authenticated user's display name, time zone, retained aggregate activity totals, points/level, derived awards and last seven calendar days of activity, plus at most five prior exchanges in the current page. Email, bio, friends, passwords, administrator tokens and guest activity are excluded. Context is rebuilt on every send and never accepted from the browser. The client permits five exchanges per chat; clear it to start again. There is a server-side limit of ten requests per account per 15-minute window, bounded input/output and a 30-second upstream timeout. Failed attempts can consume that limit.
+
+Chat has no tools, social publishing or record-changing capabilities. Conversations are not stored in the application database or browser storage. Clearing chat, leaving/reloading the page, or detecting an account/session change clears its in-memory state and consent. Clearing the page cannot cancel provider processing already begun or erase provider logs. Only hashed, expiring rate counters persist, using the existing throttle infrastructure. Account changes are checked on focus, browser account-change events and every 15 seconds while visible; stale in-flight responses are discarded. Protected APIs continue to enforce session ownership and CSRF checks.
+
+The integration uses the [OpenAI Responses API](https://developers.openai.com/api/reference/python/resources/responses/methods/create) with `store: false`, without provider conversations or previous-response IDs. This disables response retrieval storage; it is not a promise of zero provider retention. Operators must review provider policies, contracts, data residency, consent/legal basis and regulated-data eligibility before enabling external AI. See [PRIVACY.md](PRIVACY.md). A live provider request is not part of automated tests; tests inject a fake provider and never transmit real profile/activity data.
+
+
+If the coach reports that the configured model is unavailable, OpenAI returned `model_not_found`: check the exact `POSTUREPAL_AI_MODEL` ID and that the API project can access it. After saving any local environment change, recreate the app container with `docker compose up -d --no-deps posturepal`. A ChatGPT subscription does not configure the API project. The coach distinguishes model access, API-key authentication, permissions, billing/quota, rate limits, network failures and incomplete responses using safe fixed messages; raw provider errors are never shown. See [OpenAI error codes](https://developers.openai.com/api/docs/guides/error-codes).
+
+
+## GitHub Actions and releases
+
+Two workflows live in `.github/workflows`:
+
+- **CI** runs on pull requests and pushes to `main`/`develop`. It checks version consistency, runs Python tests on 3.11 and 3.13, runs Node 22 client privacy tests, validates against an isolated MySQL 8.4 database, and builds/starts the Docker image. CI uses temporary test data and mocked AI responses; it needs no application secrets or real OpenAI key.
+- **Release** runs on pushed `v*` tags or manually through **Actions → Release → Run workflow**. Choose `main` or `develop` and enter the intended stable version without `v`. It first runs the complete CI workflow. Commitizen then synchronizes versions, moves the detailed Unreleased notes into the selected release, preserves historical notes, creates the release commit and annotated tag, pushes that branch/tag atomically, and creates a GitHub Release from those notes. Existing GitHub Releases are left unchanged.
+
+The workflows pin official checkout/setup actions to verified commit hashes. CI has read-only repository permissions; only the publication job receives `contents: write`. Releases serialize to prevent concurrent tag creation. No production database, deployment or container registry publishing is performed.
+
+Before a manual release, add meaningful notes under **Unreleased**, commit the changes and push the selected branch. Use the repository's **Actions** settings to permit GitHub Actions and the publication job's write permission. Branch/tag protection must permit the release bot to push, or maintainers must create the release locally and push its branch/tag themselves. The workflow never force-pushes or bypasses protection rules. Manual dispatch becomes available after the workflow exists on the repository's default branch.
+
+For local preparation, with a clean checkout and development dependencies installed:
+
+```bash
+.venv/bin/python scripts/release.py verify
+# Replace the example with the intended next version:
+.venv/bin/python scripts/release.py prepare 0.13.0
+.venv/bin/python scripts/release.py verify --tag v0.13.0
+```
+
+The helper wraps Commitizen and preserves curated Unreleased notes through `.github/release-notes.md.j2`. It keeps an empty Unreleased section separate from numbered releases and rejects stale version references, duplicate release headings, downgrades, non-annotated/mismatched tags, dirty worktrees and missing release notes. Only stable `major.minor.patch` versions are currently supported. It does not push or publish by itself. Use `python scripts/release.py notes --output release-notes.md` to export the current release notes outside automated publication.
+
+Pushing an annotated version tag whose commit contains these workflow files runs validation and publishes its GitHub Release without a second bump. For a failed manual publication, rerun the same version only while that release commit is still the selected branch's HEAD; the helper verifies the existing tag and skips the bump. If newer commits have landed, publish from the original version tag instead, provided that commit contains the workflows; older tags can be published manually through GitHub Releases. Manual releases publish within the same workflow because pushes made with `GITHUB_TOKEN` do not trigger another tag workflow. GitHub Releases can also be created manually from a verified existing tag after checks pass.
+
+These files must be committed and pushed before GitHub can execute them. Local workflow syntax/release-helper checks cannot establish that repository permissions and protection rules allow publication. See [GitHub workflow permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions).

@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  workflows:
+    name: Workflow validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Lint workflows
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+
+  python:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    env:
+      PYTHONPATH: backend
+      OPENAI_API_KEY: ''
+      POSTUREPAL_AI_MODEL: ''
+      POSTUREPAL_DB_PATH: /tmp/posturepal-ci-bootstrap.db
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/release.py verify
+      - run: python -m unittest discover -s tests -v
+
+  client:
+    name: Client privacy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+
+  mysql:
+    name: MySQL 8.4 integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          # Isolated runner-only fixture credentials, never application secrets.
+          MYSQL_ROOT_PASSWORD: ci-root-only
+          MYSQL_DATABASE: posturepal_test
+          MYSQL_USER: posturepal_test
+          MYSQL_PASSWORD: ci-app-only
+        ports:
+          - 127.0.0.1:3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=30
+    env:
+      PYTHONPATH: backend
+      POSTUREPAL_DB_PATH: /tmp/posturepal-ci-bootstrap.db
+      POSTUREPAL_TEST_MYSQL_URL: mysql+pymysql://posturepal_test:ci-app-only@127.0.0.1:3306/posturepal_test
+      OPENAI_API_KEY: ''
+      POSTUREPAL_AI_MODEL: ''
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python tests/mysql_smoke.py
+
+  docker:
+    name: Docker build and startup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - run: docker build --tag posturepal:ci .
+      - name: Start isolated app
+        run: docker run --detach --name posturepal-ci --publish 127.0.0.1:8000:8000 posturepal:ci
+      - name: Check health
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/health; then
+              exit 0
+            fi
+            echo "Waiting for app startup ($attempt/30)"
+            sleep 1
+          done
+          exit 1
+      - name: Remove test container
+        if: always()
+        run: docker rm --force posturepal-ci || true

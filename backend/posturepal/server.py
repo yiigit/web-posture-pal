@@ -18,6 +18,9 @@ from posturepal.social.presentation.http import create_social_router
 from posturepal.activity.infrastructure.repository import ActivityRepository
 from posturepal.activity.application.tracker import ActivityTracker
 from posturepal.activity.presentation.http import create_activity_router
+from posturepal.chat.application.coach import PersonalCoach
+from posturepal.chat.infrastructure.openai_provider import OpenAICoach
+from posturepal.chat.presentation.http import create_chat_router
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -34,7 +37,7 @@ class ActivityAccessLogFilter(logging.Filter):
     def filter(self, record):
         args = record.args
         return not (isinstance(args,tuple) and len(args)>=3
-                    and '/api/v1/me/daily-activity' in str(args[2]))
+                    and any(path in str(args[2]) for path in ('/api/v1/me/daily-activity', '/api/v1/me/coach')))
 
 
 access_logger=logging.getLogger('uvicorn.access')
@@ -51,7 +54,7 @@ class HealthResponse(BaseModel):
     version: str
 
 
-def create_app(database_path: Path | None = None, admin_token: str | None = None, database: Database | None = None) -> FastAPI:
+def create_app(database_path: Path | None = None, admin_token: str | None = None, database: Database | None = None, chat_provider=None) -> FastAPI:
     app = FastAPI(title="PosturePal", version=VERSION)
     database = database or (Database.from_path(database_path) if database_path else Database.configured())
     app.state.database = database
@@ -90,6 +93,7 @@ def create_app(database_path: Path | None = None, admin_token: str | None = None
                 await task
     app.router.lifespan_context=lifespan
     app.include_router(create_activity_router(activity,current_user))
+    app.include_router(create_chat_router(PersonalCoach(activity, chat_provider if chat_provider is not None else OpenAICoach()), current_user, accounts))
     app.include_router(create_social_router(Community(SocialRepository(accounts.repository)), current_user, accounts.repository))
     app.include_router(create_user_router(accounts, require_admin, current_user))
     app.include_router(create_router(MovementLibrary(repository), require_admin))

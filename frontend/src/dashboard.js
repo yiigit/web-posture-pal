@@ -58,6 +58,6 @@ createApp({
     <section class="home-panel home-library" aria-labelledby="explore-title"><div class="home-section-heading"><h2 id="explore-title">A little movement inspiration</h2><a class="text-button" href="/library.html">Explore library →</a></div><p v-if="loading" role="status">Loading movements…</p><div v-else-if="error" role="alert"><p>{{ error }}</p><button class="secondary" @click="load">Try again</button></div><p v-else-if="!exercises.length" class="home-muted">Your movement library is empty. An administrator can add movements.</p><div v-else class="home-movements"><a v-for="item in exercises.slice(0,3)" :key="item.id" href="/library.html" class="home-movement"><movement-figure :kind="item.symbol"/><span>{{ item.area }} · {{ item.duration }} sec</span><h3>{{ item.name }} ↗</h3><p>{{ item.description }}</p></a></div></section>
     <progress-panel :day="day" :mode="activityMode" :identity="activityIdentity" :habits="completedHabits" :breaks="completedBreaks" :ready="activityReady" :saving="savingActivity"/>
     <social-summary/>
-    <footer><span>✳ Made for your everyday, not your personal best.</span><span>PosturePal v0.10.0</span></footer></main></div>
+    <footer><span>✳ Made for your everyday, not your personal best.</span><span>PosturePal v0.12.1</span></footer></main></div>
   </div>`
 }).mount('#app');
