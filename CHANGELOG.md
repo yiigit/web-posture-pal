@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Replace generic AI errors with safe, actionable model-access, authentication, quota, rate-limit and connection messages.
+
+- Add a private AI coach for profile, activity, progress, motivation and achievements with reviewed context and explicit consent.
+- Add server-side OpenAI configuration, owner/session checks, bounded stateless requests and per-account throttling without saved transcripts.
+
 ## v0.11.0 (2026-10-31)
 
 - Show administration and user-management links only for active signed-in administrators, refreshing on account changes and session checks.

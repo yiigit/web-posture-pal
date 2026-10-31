@@ -10,7 +10,7 @@ These instructions apply throughout this repository. Read `README.md` and releva
 - Frontend: Vue 3 native ES modules, using the vendored runtime in `frontend/vendor`. There is no Node/npm build step.
 - Persistence: MySQL 8.4 in Docker (`mysql-data` volume), through SQLAlchemy/PyMySQL. Shared schema and transaction adapters live in `shared/infrastructure/database.py`. Temporary SQLite databases remain supported for isolated tests; unconfigured local runs retain the SQLite development fallback.
 - `backend/posturepal/server.py` is the composition root and serves the API and static frontend.
-- Bounded contexts: `movement`, `breaks`, `users`, `social`, and `activity`, each with domain, application, infrastructure and presentation modules where applicable.
+- Bounded contexts: `movement`, `breaks`, `users`, `social`, `activity`, and `chat`, each with domain, application, infrastructure and presentation modules where applicable.
 - Keep domain rules independent of FastAPI and storage details. Put use cases in application modules, database operations in infrastructure, and request validation/authentication adapters in presentation.
 - Use parameterized SQL, explicit transactions where atomicity matters, and close database connections. Schema changes must preserve existing catalog, account and social data. Seed the exercise catalog only once.
 - Reuse Vue components and composables. Shared navigation lives in `AppSidebar.js`, profile access in `ProfileBadge.js`, and palette tokens in `themes.css`.
@@ -20,6 +20,7 @@ These instructions apply throughout this repository. Read `README.md` and releva
 - `/`: default wellbeing dashboard.
 - `/library.html`: CRUD-backed movement library.
 - `/breaks.html`: guided breaks, reminders, posture checks and daily habits.
+- `/coach.html`: private, opt-in AI habit coach; external context sharing requires consent.
 - `/account.html`: registration, sign-in and profile management.
 - `/admin.html`: secured catalog dashboard and management.
 - `/users.html`: secured user management.
@@ -29,6 +30,7 @@ These instructions apply throughout this repository. Read `README.md` and releva
 - Preserve keyboard access, accessible control names, focus states, responsive layouts and reduced-motion preferences. Render user text through Vue interpolation; do not use raw HTML rendering for user content.
 - Guest habits/break counts are browser-local; signed-in daily activity is private account data. Never auto-import guest history, cache account activity in guest storage, or reassign events after account switching. Favorites remain browser-local. Do not imply verified workout measurements.
 - Retain daily activity export/erasure controls, ownership checks, bounded retention and separation from social sharing. Review PRIVACY.md; do not claim GDPR/HIPAA certification from code features alone.
+- AI chat must remain owner-scoped and consent-gated, with no transcript persistence or real-provider calls in tests. Keep keys server-side and errors sanitized; never imply zero provider retention from `store: false`.
 - Do not automatically publish activities. Social posts default to private and may be shared with accepted friends explicitly. Never bypass audience checks for direct links, reactions, comments or statistics.
 
 ## Security and secrets

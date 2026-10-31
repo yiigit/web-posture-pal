@@ -12,6 +12,7 @@ export default {
       <a class="coach-link" :class="{'navigation-active': active === 'library'}" href="/library.html" :aria-current="active === 'library' ? 'page' : undefined" aria-label="Movement library">▦ <span>Movement library</span></a>
       <a class="coach-link" :class="{'navigation-active': active === 'breaks'}" href="/breaks.html" :aria-current="active === 'breaks' ? 'page' : undefined" aria-label="Breaks and daily habits">↗ <span>Breaks & daily habits</span></a>
       <a class="coach-link" :class="{'navigation-active': active === 'social'}" :aria-current="active === 'social' ? 'page' : undefined" href="/social.html" aria-label="Friends and sharing">♧ <span>Friends & sharing</span></a>
+      <a class="coach-link" :class="{'navigation-active': active === 'coach'}" :aria-current="active === 'coach' ? 'page' : undefined" href="/coach.html" aria-label="AI coach">✧ <span>AI coach</span></a>
       <slot/>
       <a class="coach-link" :class="{'navigation-active': active === 'account'}" :aria-current="active === 'account' ? 'page' : undefined" href="/account.html" aria-label="Your profile">◉ <span>Account & profile</span></a>
       <a v-if="isAdmin" class="coach-link" :class="{'navigation-active': active === 'users'}" :aria-current="active === 'users' ? 'page' : undefined" href="/users.html" aria-label="User management">♙ <span>User management</span></a>

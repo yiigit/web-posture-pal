@@ -291,3 +291,30 @@ The release command updates version files and the changelog, commits the release
 The repository uses the `main` branch and annotated semantic-version tags, starting at `v0.10.0`. Earlier changelog entries describe development milestones and do not have reconstructed Git history. The original initial commit predates Conventional Commit validation; subsequent commits follow Commitizen rules.
 
 Configure your remote before publishing. Push the branch and tags explicitly with `git push -u origin main` and `git push origin --tags`. Environment secrets, local tooling, databases and virtual environments are excluded from Git. Commitizen does not publish remotely.
+
+
+## Private AI coach
+
+Open `/coach.html` or **AI coach** in the shared navigation. Sign-in is required. The page previews the exact account context and requires explicit consent before each new conversation sends anything to OpenAI. Ask about your profile, daily activity, progress, achievements or motivation. Answers are general habit guidance and may be incorrect; they are not diagnosis or treatment.
+
+Configure these server-side variables in your environment (or your local `.env` for Docker), then rebuild/restart the app:
+
+```dotenv
+OPENAI_API_KEY=
+POSTUREPAL_AI_MODEL=
+```
+
+Supply your own OpenAI API key and a Responses-compatible text model ID available to your API project. Both are required; otherwise the page explains that chat is unavailable. No key is sent to the frontend, and there is no simulated AI fallback. Configure provider spending limits separately.
+
+```bash
+docker compose up --build -d --no-deps posturepal
+```
+
+Each send includes only the authenticated user's display name, time zone, retained aggregate activity totals, points/level, derived awards and last seven calendar days of activity, plus at most five prior exchanges in the current page. Email, bio, friends, passwords, administrator tokens and guest activity are excluded. Context is rebuilt on every send and never accepted from the browser. The client permits five exchanges per chat; clear it to start again. There is a server-side limit of ten requests per account per 15-minute window, bounded input/output and a 30-second upstream timeout. Failed attempts can consume that limit.
+
+Chat has no tools, social publishing or record-changing capabilities. Conversations are not stored in the application database or browser storage. Clearing chat, leaving/reloading the page, or detecting an account/session change clears its in-memory state and consent. Clearing the page cannot cancel provider processing already begun or erase provider logs. Only hashed, expiring rate counters persist, using the existing throttle infrastructure. Account changes are checked on focus, browser account-change events and every 15 seconds while visible; stale in-flight responses are discarded. Protected APIs continue to enforce session ownership and CSRF checks.
+
+The integration uses the [OpenAI Responses API](https://developers.openai.com/api/reference/python/resources/responses/methods/create) with `store: false`, without provider conversations or previous-response IDs. This disables response retrieval storage; it is not a promise of zero provider retention. Operators must review provider policies, contracts, data residency, consent/legal basis and regulated-data eligibility before enabling external AI. See [PRIVACY.md](PRIVACY.md). A live provider request is not part of automated tests; tests inject a fake provider and never transmit real profile/activity data.
+
+
+If the coach reports that the configured model is unavailable, OpenAI returned `model_not_found`: check the exact `POSTUREPAL_AI_MODEL` ID and that the API project can access it. After saving any local environment change, recreate the app container with `docker compose up -d --no-deps posturepal`. A ChatGPT subscription does not configure the API project. The coach distinguishes model access, API-key authentication, permissions, billing/quota, rate limits, network failures and incomplete responses using safe fixed messages; raw provider errors are never shown. See [OpenAI error codes](https://developers.openai.com/api/docs/guides/error-codes).

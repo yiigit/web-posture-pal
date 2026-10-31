@@ -56,3 +56,12 @@ Authoritative references:
 - [European Commission: individual rights](https://commission.europa.eu/law/law-topic/data-protection/information-individuals_en)
 - [HHS: HIPAA covered entities and business associates](https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html)
 - [HHS: HIPAA Security Rule summary](https://www.hhs.gov/hipaa/for-professionals/security/laws-regulations/index.html)
+
+
+## Optional external AI coach
+
+AI chat is disabled unless an operator configures a server API key and model. Signed-in users must explicitly consent before sending messages, and may inspect the exact context on the chat page. Each send transfers to OpenAI the message/current in-memory conversation, display name, time zone, activity totals from the retained 90-day window, derived points/level/awards and seven days of daily activity counts. Email addresses, bios, friends, passwords, session secrets and browser-local guest activity are not included. Users should avoid typing sensitive medical or identifying information into messages.
+
+The app stores no conversation transcript or consent record on disk, in its database, or in browser storage. Consent applies to the current page conversation and resets on clearing or a detected account change. Refresh/navigation discards the transcript. The provider request uses `store: false` and no server-side conversation ID, but provider processing/logging and contractual retention can still apply. Local deletion or clearing chat cannot retract an already submitted request or delete provider logs. Operators must explain provider policies and rights processes in their own notice; code alone does not establish GDPR/HIPAA compliance or an appropriate legal basis/BAA.
+
+AI answers cannot modify activity, profile or social records. Context is read from the authenticated account and bound to the expected account ID, not client-supplied statistics. CSRF verification and per-account throttling apply. Hashed request counters expire after 15 minutes and are cleaned by the existing throttle mechanism; they contain no messages/activity. Chat request paths are excluded from Uvicorn access logs. Upstream errors are sanitized; reverse proxies/APM must separately avoid capturing request bodies. Conversation data is present in process memory during requests and can remain in browser memory until clearing/navigation or session-change detection. A request already sent can continue processing even after browser cancellation.
