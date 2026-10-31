@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.12.0 (2026-10-31)
+
 - Replace generic AI errors with safe, actionable model-access, authentication, quota, rate-limit and connection messages.
 
 - Add a private AI coach for profile, activity, progress, motivation and achievements with reviewed context and explicit consent.
