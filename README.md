@@ -44,6 +44,57 @@ Docker uses MySQL by default. The SQLAlchemy/PyMySQL connection uses `MYSQL_HOST
 
 The health endpoint checks database connectivity. Shared SQLAlchemy schema definitions enable foreign-key deletion cascades on both engines. Critical account/rate-limit/friendship changes use explicit transaction locks. New empty databases receive the standard eight-movement catalog once.
 
+### Set up a native MySQL server (without Docker)
+
+Install and start MySQL 8.4 on your server, and have its administrator create a
+dedicated application user with privileges on the intended database (including
+CREATE for database/table initialization). The script does not install MySQL,
+create MySQL users, or use `MYSQL_ROOT_PASSWORD`.
+
+Create a Python environment in this checkout:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Configure these values privately in `.env` (or export them in the shell):
+
+```dotenv
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DATABASE=posturepal
+MYSQL_USER=posturepal
+MYSQL_PASSWORD=
+```
+
+Supply your application user's password, then run:
+
+```bash
+bash scripts/setup_database.sh
+```
+
+Deploy the complete `backend/` directory together with `scripts/`, including
+`backend/posturepal/commands/init_database.py`. If Python reports
+`No module named posturepal.commands.init_database`, check that this file was
+committed and included in the server deployment; copying only the shell script
+is insufficient.
+
+This connects directly to MySQL, creates the database if absent, creates missing
+tables, and seeds the standard movement catalog once. It preserves existing data
+and starts no web server. It requires no Docker or administrator bootstrap token.
+Reruns preserve catalog edits; this is initialization, not a column migration
+tool. Do not run it before a SQLite import that requires an empty destination.
+
+The script reads `.env` as literal `KEY=value` assignments with optional matching
+outer quotes; it performs no variable expansion, escape processing, inline-comment
+parsing, or shell execution. Exported variables take precedence. An optional
+`POSTUREPAL_DATABASE_URL=mysql+pymysql://…` overrides the separate MySQL fields
+(percent-encode credentials; URL query options can configure TLS for remote
+connections). Database names for creation accept letters, digits and underscores.
+Keep `.env` owner-readable only. Normal local app startup still requires these
+settings exported into its process environment; it does not automatically load `.env`.
+
 ### Existing SQLite installations
 
 The old `posturepal-data` Docker volume is retained and mounted read-only at `/legacy`; it is never deleted or overwritten. Migration is explicit and imports exercise data, accounts/password hashes, sessions, privacy settings and social records into an **empty** MySQL application database. Back up your old volume/file first. Stop the old app before importing so the SQLite source is a consistent offline database.
